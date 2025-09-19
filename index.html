@@ -1,92 +1,15 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Catch the Ball Game</title>
-  <style>
-    body {
-      margin: 0;
-      overflow: hidden;
-      background-color: #f0f8ff;
-    }
-    canvas {
-      display: block;
-    }
-  </style>
+   <meta charset="UTF-8">
+   <title>Jump Game</title>
+   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <canvas id="gameCanvas"></canvas>
-  <script>
-    const canvas = document.getElementById("gameCanvas");
-    const ctx = canvas.getContext("2d");
-
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-
-    let score = 0;
-    const player = { x: canvas.width / 2, y: canvas.height - 50, width: 100, height: 20, speed: 10 };
-    const ball = { x: Math.random() * canvas.width, y: 0, radius: 15, speed: 5 };
-
-    function drawPlayer() {
-      ctx.fillStyle = "blue";
-      ctx.fillRect(player.x, player.y, player.width, player.height);
-    }
-
-    function drawBall() {
-      ctx.beginPath();
-      ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
-      ctx.fillStyle = "red";
-      ctx.fill();
-      ctx.closePath();
-    }
-
-    function updateBall() {
-      ball.y += ball.speed;
-      if (ball.y > canvas.height) {
-        ball.y = 0;
-        ball.x = Math.random() * canvas.width;
-        score = Math.max(0, score - 1); // Lose a point if missed
-      }
-    }
-
-    function checkCollision() {
-      if (
-        ball.y + ball.radius >= player.y &&
-        ball.x >= player.x &&
-        ball.x <= player.x + player.width
-      ) {
-        ball.y = 0;
-        ball.x = Math.random() * canvas.width;
-        score++;
-      }
-    }
-
-    function drawScore() {
-      ctx.fillStyle = "black";
-      ctx.font = "20px Arial";
-      ctx.fillText(`Score: ${score}`, 10, 30);
-    }
-
-    function gameLoop() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      drawPlayer();
-      drawBall();
-      updateBall();
-      checkCollision();
-      drawScore();
-      requestAnimationFrame(gameLoop);
-    }
-
-    document.addEventListener("keydown", (e) => {
-      if (e.key === "ArrowLeft" && player.x > 0) {
-        player.x -= player.speed;
-      } else if (e.key === "ArrowRight" && player.x + player.width < canvas.width) {
-        player.x += player.speed;
-      }
-    });
-
-    gameLoop();
-  </script>
+   <div id="game">
+       <div id="character"></div>
+       <div id="block"></div>
+   </div>
+   <script src="script.js"></script>
 </body>
 </html>
