@@ -2,57 +2,45 @@
 <html lang="id">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Arcade Hub — Puluhan Game 2D</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>Echoes of Isle — Story Explorer</title>
   <link rel="stylesheet" href="styles.css" />
+  <!-- three.js -->
+  <script src="https://unpkg.com/three@0.152.2/build/three.min.js"></script>
+  <script src="https://unpkg.com/three@0.152.2/examples/js/controls/PointerLockControls.js"></script>
 </head>
 <body>
-  <header class="site-header">
-    <h1>Arcade Hub</h1>
-    <p class="tagline">Katalog game 2D — puluhan slot. Pilih game dan mainkan langsung di browser.</p>
-  </header>
-
-  <main class="container">
-    <section id="catalog" class="catalog">
-      <!-- cards injected by JS -->
-    </section>
-
-    <section id="playArea" class="play-area hidden" aria-live="polite">
-      <div class="play-header">
-        <button id="backBtn" class="btn">← Kembali</button>
-        <h2 id="gameTitle">Game Title</h2>
-        <div id="meta"></div>
+  <div id="ui">
+    <div id="topbar">
+      <div id="title">Echoes of Isle</div>
+      <div id="hud">
+        <span id="pages">Pages: 0 / 5</span>
+        <button id="btn-reset" class="btn">Restart</button>
       </div>
+    </div>
 
-      <div class="play-body">
-        <div id="canvasWrap" class="canvas-wrap">
-          <canvas id="gameCanvas" tabindex="0" aria-label="Game canvas"></canvas>
-        </div>
-
-        <aside class="side-panel">
-          <div id="gameInfo" class="panel">
-            <h3>Instruksi</h3>
-            <div id="instructions">Pilih game dari katalog.</div>
-          </div>
-          <div class="panel">
-            <h3>Status</h3>
-            <div>Score: <span id="score">0</span></div>
-            <div>Level: <span id="level">1</span></div>
-          </div>
-          <div class="panel">
-            <h3>Kontrol Cepat</h3>
-            <div id="controls">—</div>
-            <div style="margin-top:8px"><button id="restartBtn" class="btn">Restart</button></div>
-          </div>
-        </aside>
+    <div id="storyBox" class="panel hidden" aria-live="polite">
+      <div id="storyText"></div>
+      <div id="storyControls">
+        <button id="storyNext" class="btn">Next</button>
+        <button id="closeStory" class="btn">Close</button>
       </div>
-    </section>
-  </main>
+    </div>
+  </div>
 
-  <footer class="site-footer">
-    <small>&copy; 2025 Arcade Hub — Simpel, cepat, dan mudah diperluas.</small>
-  </footer>
+  <div id="canvas-wrap">
+    <canvas id="c"></canvas>
+  </div>
 
-  <script src="games.js" defer></script>
+  <!-- Mobile controls -->
+  <div id="touch-controls">
+    <div id="joystick-base"><div id="joystick-thumb"></div></div>
+    <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-end">
+      <button id="btn-interact" class="touch-btn">Interact</button>
+      <button id="btn-toggle-inv" class="touch-btn small">Story</button>
+    </div>
+  </div>
+
+  <script src="game.js"></script>
 </body>
 </html>
