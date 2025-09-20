@@ -1,413 +1,501 @@
-// game.js — VoxelCraft prototype (complex web voxel with chunks + instancing)
-// Requires three.js and PointerLockControls (loaded from CDN in index.html).
-
-/* ========= Config ========= */
-const CHUNK_SIZE = 16;        // blocks per chunk (X,Z)
-const WORLD_CHUNKS_X = 4;     // number of chunks along X
-const WORLD_CHUNKS_Z = 4;     // number of chunks along Z
-const BLOCK_SIZE = 1;
-const MAX_HEIGHT = 12;        // max stack height per (x,z)
-const BLOCK_TYPES = {
-  grass: { id: 1, colorTop: 0x6fbf5b, colorSide: 0x4ea04a },
-  dirt:  { id: 2, colorTop: 0x8b5a3c, colorSide: 0x7a4b33 },
-  stone: { id: 3, colorTop: 0x9ea3a6, colorSide: 0x7f8487 },
-  wood:  { id: 4, colorTop: 0xC38A5A, colorSide: 0x98603a },
-  leaves:{ id: 5, colorTop: 0x4db24d, colorSide: 0x3e9a3e }
-};
-
-const worldWidth = CHUNK_SIZE * WORLD_CHUNKS_X;
-const worldDepth = CHUNK_SIZE * WORLD_CHUNKS_Z;
-
-/* ========= THREE setup ========= */
-const canvas = document.getElementById('c');
-const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
-renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
-renderer.setSize(window.innerWidth, window.innerHeight, false);
-renderer.outputEncoding = THREE.sRGBEncoding;
-
-const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x9fdcff);
-
-// camera + controls
-const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
-camera.position.set(0, 10, 20);
-
-const controls = new THREE.PointerLockControls(camera, document.body);
-
-document.getElementById('btn-start').addEventListener('click', ()=>{
-  controls.lock();
-});
-controls.addEventListener('lock', ()=> { document.getElementById('btn-start').style.display='none'; });
-controls.addEventListener('unlock', ()=> { document.getElementById('btn-start').style.display='inline-block'; });
-
-/* lights */
-scene.add(new THREE.HemisphereLight(0xffffee, 0x444455, 0.8));
-const dir = new THREE.DirectionalLight(0xffffff, 0.8);
-dir.position.set(30,50,10);
-scene.add(dir);
-
-/* ground plane fallback (below blocks) */
-const groundMat = new THREE.MeshStandardMaterial({color:0x1f5a2b});
-const ground = new THREE.Mesh(new THREE.PlaneGeometry(1000,1000), groundMat);
-ground.rotation.x = -Math.PI/2;
-ground.position.y = -10;
-scene.add(ground);
-
-/* ========= World data structure =========
-   worldChunks indexed by chunkX,chunkZ
-   each chunk has blocks[x][z] = array of blockType ids bottom->top
-   We'll generate initial terrain via simple heightmap function.
-*/
-const worldChunks = {}; // key: `${cx},${cz}`
-
-function chunkKey(cx, cz){ return `${cx},${cz}`; }
-
-function createEmptyChunk(cx, cz){
-  const blocks = Array.from({length:CHUNK_SIZE}, ()=> Array.from({length:CHUNK_SIZE}, ()=> []));
-  return { cx, cz, blocks, meshes: {} /* instanced meshes per type */, needsRebuild: true };
-}
-
-/* simple deterministic height function (no external noise lib) */
-function heightAt(wx, wz){
-  // combine sinusoids for gentle hills
-  const h = Math.floor(
-    2 + 2*Math.sin(wx*0.12) + 2*Math.cos(wz*0.15) + Math.sin((wx+wz)*0.07)
-  );
-  return Math.max(1, Math.min(MAX_HEIGHT, h));
-}
-
-function worldInit(){
-  for(let cx=0; cx < WORLD_CHUNKS_X; cx++){
-    for(let cz=0; cz < WORLD_CHUNKS_Z; cz++){
-      const c = createEmptyChunk(cx, cz);
-      // fill with terrain
-      for(let lx=0; lx<CHUNK_SIZE; lx++){
-        for(let lz=0; lz<CHUNK_SIZE; lz++){
-          const wx = cx*CHUNK_SIZE + lx - Math.floor(worldWidth/2);
-          const wz = cz*CHUNK_SIZE + lz - Math.floor(worldDepth/2);
-          const h = heightAt(wx, wz);
-          const col = [];
-          for(let y=0; y<h; y++){
-            if(y === h-1) col.push(BLOCK_TYPES.grass.id);
-            else if(y > h-4) col.push(BLOCK_TYPES.dirt.id);
-            else col.push(BLOCK_TYPES.stone.id);
-          }
-          // occasional tree
-          if(Math.random() < 0.03){
-            // trunk
-            const trunkHeight = 3 + Math.floor(Math.random()*2);
-            for(let t=0;t<trunkHeight;t++) col.push(BLOCK_TYPES.wood.id);
-            // simple leaves around top
-            // we'll add leaves into neighboring columns below when building meshes
-          }
-          c.blocks[lx][lz] = col;
-        }
-      }
-      worldChunks[chunkKey(cx,cz)] = c;
-    }
-  }
-}
-worldInit();
-
-/* ========= Rendering strategy: InstancedMesh per-chunk per-blockType =========
-   For each chunk, for each block type present, create InstancedMesh with
-   capacity = number of blocks of that type in chunk. When blocks change,
-   rebuild that chunk's instanced meshes. This is moderately efficient.
+/* games.js — Arcade Hub
+   - Katalog games
+   - Router: membuka game, menutup game
+   - 6 example games fully implemented:
+      1) Pong
+      2) Snake
+      3) Breakout
+      4) Flappy
+      5) Memory (matching)
+      6) Dodger
+   - 14 template slots (game-template-1 ... game-template-14) : ready to implement
+   - To add more games: copy a template, implement init/update/draw/controls, and register in GAMES array.
 */
 
-const boxGeo = new THREE.BoxGeometry(BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
+/* ----------------------------- Helpers & DOM ----------------------------- */
+const $ = id=>document.getElementById(id);
+const catalogEl = document.getElementById('catalog');
+const playArea = document.getElementById('playArea');
+const backBtn = document.getElementById('backBtn');
+const titleEl = document.getElementById('gameTitle');
+const instrEl = document.getElementById('instructions');
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+const scoreEl = document.getElementById('score');
+const levelEl = document.getElementById('level');
+const controlsEl = document.getElementById('controls');
+const restartBtn = document.getElementById('restartBtn');
 
-/* helper create material with top/side color simple shading (no textures) */
-function makeBlockMaterial(hexTop, hexSide){
-  return new THREE.MeshStandardMaterial({ color: hexSide, roughness:0.9, metalness:0.0 });
+let activeGame = null;
+let gameLoopId = null;
+
+/* make responsive canvas sized by CSS */
+function resizeCanvas(){
+  const rect = canvas.getBoundingClientRect();
+  canvas.width = Math.max(320, Math.floor(rect.width));
+  canvas.height = Math.max(240, Math.floor(rect.height));
+}
+window.addEventListener('resize', ()=>{ if(activeGame && activeGame.onResize) activeGame.onResize(); resizeCanvas(); });
+
+/* ----------------------------- Game API template -----------------------------
+ Each game object must implement:
+  - id: string
+  - title: string
+  - description: string
+  - instructions: string (shown in UI)
+  - init(canvas, ctx, env) -> setup
+  - update(dt) -> update state
+  - draw(ctx) -> draw frame
+  - onKeyDown / onKeyUp / onPointerDown optional
+  - cleanup() -> remove listeners, free resources
+  - onResize() optional
+ ---------------------------------------------------------------------------*/
+
+/* ----------------------------- Registry -----------------------------*/
+const GAMES = [];
+
+/* ----------------------------- Utility: register helper -----------------------------*/
+function registerGame(game){
+  GAMES.push(game);
 }
 
-/* chunk rebuild */
-function rebuildChunk(chunk){
-  // dispose old instanced meshes
-  for(const key in chunk.meshes){
-    const mesh = chunk.meshes[key];
-    scene.remove(mesh);
-    if(mesh.geometry) mesh.geometry.dispose();
-    if(mesh.material) mesh.material.dispose();
+/* ----------------------------- UI: render catalog -----------------------------*/
+function renderCatalog(){
+  catalogEl.innerHTML = '';
+  for(const g of GAMES){
+    const card = document.createElement('div'); card.className = 'card';
+    card.innerHTML = `
+      <h3>${g.title}</h3>
+      <p>${g.description}</p>
+      <div class="actions">
+        <button class="btn" data-game="${g.id}">Mainkan</button>
+        <button class="link" data-info="${g.id}">Info</button>
+      </div>
+    `;
+    catalogEl.appendChild(card);
   }
-  chunk.meshes = {};
-
-  // collect positions per block type
-  const positionsByType = {};
-  for(let lx=0; lx<CHUNK_SIZE; lx++){
-    for(let lz=0; lz<CHUNK_SIZE; lz++){
-      const stack = chunk.blocks[lx][lz];
-      for(let y=0; y<stack.length; y++){
-        const bId = stack[y];
-        if(!positionsByType[bId]) positionsByType[bId] = [];
-        // compute world coords
-        const wx = (chunk.cx*CHUNK_SIZE + lx) - Math.floor(worldWidth/2);
-        const wz = (chunk.cz*CHUNK_SIZE + lz) - Math.floor(worldDepth/2);
-        const wy = y;
-        positionsByType[bId].push([wx + 0.5, wy + 0.5, wz + 0.5]);
-      }
-    }
-  }
-
-  // build instanced mesh per type
-  Object.keys(positionsByType).forEach(idStr=>{
-    const id = Number(idStr);
-    const positions = positionsByType[id];
-    const typeKey = Object.keys(BLOCK_TYPES).find(k=>BLOCK_TYPES[k].id===id);
-    const typ = BLOCK_TYPES[typeKey];
-    const mat = makeBlockMaterial(typ.colorTop, typ.colorSide);
-    const inst = new THREE.InstancedMesh(boxGeo, mat, positions.length);
-    inst.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
-    const dummy = new THREE.Object3D();
-    for(let i=0;i<positions.length;i++){
-      dummy.position.set(positions[i][0], positions[i][1], positions[i][2]);
-      dummy.updateMatrix();
-      inst.setMatrixAt(i, dummy.matrix);
-    }
-    inst.userData = { blockId: id };
-    chunk.meshes[id] = inst;
-    scene.add(inst);
+  // attach handlers
+  catalogEl.querySelectorAll('.btn').forEach(b=>{
+    b.addEventListener('click', ()=> openGame(b.dataset.game));
   });
-
-  chunk.needsRebuild = false;
+  catalogEl.querySelectorAll('.link').forEach(b=>{
+    b.addEventListener('click', ()=> alert(findGame(b.dataset.info).instructions));
+  });
 }
 
-/* build all initially */
-for(const k in worldChunks) rebuildChunk(worldChunks[k]);
+/* ----------------------------- Router: open / close -----------------------------*/
+function findGame(id){ return GAMES.find(g=>g.id===id); }
 
-/* ========= World editing: place/destroy blocks =========
-   Raycast from camera to find block face; left click destroy; right click place.
-*/
-const raycaster = new THREE.Raycaster();
-const mouse = new THREE.Vector2();
-let currentBlockType = 'grass';
-document.getElementById('blockPicker').addEventListener('change', (e)=>{
-  currentBlockType = e.target.value;
-  document.getElementById('curBlock').textContent = currentBlockType.charAt(0).toUpperCase()+currentBlockType.slice(1);
-});
+function openGame(id){
+  const g = findGame(id);
+  if(!g) return;
+  // cleanup previous
+  closeGame();
 
-/* utility: convert world floored coords to chunk/local coords and check bounds */
-function worldToChunk(wx, wy, wz){
-  // wx/wz in world units (block coords base)
-  const halfW = Math.floor(worldWidth/2);
-  const halfD = Math.floor(worldDepth/2);
-  const gx = Math.floor(wx) + halfW;   // 0..worldWidth-1
-  const gz = Math.floor(wz) + halfD;
-  if(gx < 0 || gz < 0 || gx >= worldWidth || gz >= worldDepth) return null;
-  const cx = Math.floor(gx / CHUNK_SIZE);
-  const cz = Math.floor(gz / CHUNK_SIZE);
-  const lx = gx % CHUNK_SIZE;
-  const lz = gz % CHUNK_SIZE;
-  return { cx, cz, lx, lz };
-}
+  activeGame = g;
+  titleEl.textContent = g.title;
+  instrEl.textContent = g.instructions || '—';
+  playArea.classList.remove('hidden');
+  resizeCanvas();
 
-/* get first intersected instanced mesh/object and compute block coords */
-function getBlockTarget(){
-  // raycast scene
-  raycaster.setFromCamera({ x: 0, y: 0 }, camera); // center screen
-  const intersects = raycaster.intersectObjects(scene.children, true);
-  for(let inter of intersects){
-    // ignore ground plane
-    if(inter.object === ground) continue;
-    // position of intersection in world coordinates
-    const p = inter.point.clone().sub(inter.face.normal.clone().multiplyScalar(0.01));
-    // derive block coords by flooring minus 0.5 offset (since we placed blocks at center +0.5)
-    const bx = Math.floor(p.x);
-    const by = Math.floor(p.y);
-    const bz = Math.floor(p.z);
-    // For placing we will use the face normal to offset
-    return { intersect: inter, bx, by, bz, faceNormal: inter.face.normal.clone() };
+  // reset UI
+  scoreEl.textContent = '0';
+  levelEl.textContent = '1';
+  controlsEl.textContent = g.controls || 'Gunakan keyboard / mouse';
+
+  // call init
+  const env = { canvas, ctx, setScore:(s)=>scoreEl.textContent = s, setLevel:(l)=>levelEl.textContent = l };
+  g.init(canvas, ctx, env);
+
+  // start main loop
+  let last = performance.now();
+  function loop(now){
+    const dt = Math.min(0.05, (now - last)/1000);
+    last = now;
+    g.update(dt);
+    g.draw(ctx);
+    gameLoopId = requestAnimationFrame(loop);
   }
-  return null;
+  gameLoopId = requestAnimationFrame(loop);
 }
 
-/* mouse handlers */
-window.addEventListener('mousedown', (e)=>{
-  if(!controls.isLocked) return;
-  e.preventDefault();
-  const target = getBlockTarget();
-  if(!target) return;
-  const { bx, by, bz, faceNormal } = target;
+function closeGame(){
+  if(activeGame){
+    if(activeGame.cleanup) activeGame.cleanup();
+    activeGame = null;
+  }
+  if(gameLoopId) cancelAnimationFrame(gameLoopId);
+  playArea.classList.add('hidden');
+}
 
-  if(e.button === 0){
-    // destroy block at bx,by,bz if present
-    const chunkInfo = worldToChunk(bx, by, bz);
-    if(!chunkInfo) return;
-    const chunk = worldChunks[chunkKey(chunkInfo.cx, chunkInfo.cz)];
-    if(!chunk) return;
-    const stack = chunk.blocks[chunkInfo.lx][chunkInfo.lz];
-    // ensure by within stack
-    if(by >=0 && by < stack.length){
-      stack.splice(by, 1); // remove block at that height
-      chunk.needsRebuild = true;
-      rebuildChunk(chunk);
+/* UI hooks */
+backBtn.addEventListener('click', ()=> closeGame());
+restartBtn.addEventListener('click', ()=> { if(activeGame && activeGame.restart) activeGame.restart(); });
+
+/* ----------------------------- GAME 1: PONG -----------------------------*/
+registerGame({
+  id:'pong',
+  title:'Pong Classic',
+  description:'Versi sederhana Pong. Gerak paddle: W/S (kiri) dan panah atas/bawah (kanan).',
+  instructions:'Kontrol: W/S (paddle kiri) • Panah atas/bawah (paddle kanan) • Space untuk mulai / pause.',
+  controls: 'W/S • ↑/↓ • Space',
+  init(canvas, ctx, env){
+    this.w = canvas.width; this.h = canvas.height;
+    this.p1 = {x:20,y:this.h/2-40,w:12,h:80,vy:0};
+    this.p2 = {x:this.w-32,y:this.h/2-40,w:12,h:80,vy:0};
+    this.ball = {x:this.w/2,y:this.h/2,r:8,vx:200*(Math.random()>0.5?1:-1),vy:120*(Math.random()>0.5?1:-1)};
+    this.score = [0,0]; this.paused = true;
+    this.keydown = (e)=>{ if(e.key==='w') this.p1.vy=-300; if(e.key==='s') this.p1.vy=300; if(e.key==='ArrowUp') this.p2.vy=-300; if(e.key==='ArrowDown') this.p2.vy=300; if(e.key===' ') this.paused=!this.paused; };
+    this.keyup = (e)=>{ if(e.key==='w' || e.key==='s') this.p1.vy=0; if(e.key==='ArrowUp' || e.key==='ArrowDown') this.p2.vy=0; };
+    window.addEventListener('keydown', this.keydown); window.addEventListener('keyup', this.keyup);
+    this.env = env;
+  },
+  update(dt){
+    if(this.paused) return;
+    // paddles
+    this.p1.y += this.p1.vy * dt; this.p2.y += this.p2.vy * dt;
+    this.p1.y = Math.max(0, Math.min(this.h - this.p1.h, this.p1.y));
+    this.p2.y = Math.max(0, Math.min(this.h - this.p2.h, this.p2.y));
+    // ball
+    this.ball.x += this.ball.vx * dt; this.ball.y += this.ball.vy * dt;
+    // collisions
+    if(this.ball.y - this.ball.r < 0 || this.ball.y + this.ball.r > this.h) this.ball.vy *= -1;
+    // paddle collide
+    if(this.ball.x - this.ball.r < this.p1.x + this.p1.w && this.ball.y > this.p1.y && this.ball.y < this.p1.y + this.p1.h){
+      this.ball.vx = Math.abs(this.ball.vx); this.ball.vx *= 1.03;
     }
-  } else if(e.button === 2){
-    // place block on face (bx + faceNormal)
-    const placeX = bx + faceNormal.x*(faceNormal.x>0?1:0);
-    const placeY = by + faceNormal.y*(faceNormal.y>0?1:0);
-    const placeZ = bz + faceNormal.z*(faceNormal.z>0?1:0);
-    const targetPlace = worldToChunk(placeX, placeY, placeZ);
-    if(!targetPlace) return;
-    const chunkP = worldChunks[chunkKey(targetPlace.cx, targetPlace.cz)];
-    if(!chunkP) return;
-    const stackP = chunkP.blocks[targetPlace.lx][targetPlace.lz];
-    // we only allow placing at top of column or filling a gap at that y
-    if(placeY <= stackP.length){
-      // insert at position placeY
-      stackP.splice(placeY, 0, BLOCK_TYPES[currentBlockType].id);
-      chunkP.needsRebuild = true;
-      rebuildChunk(chunkP);
+    if(this.ball.x + this.ball.r > this.p2.x && this.ball.y > this.p2.y && this.ball.y < this.p2.y + this.p2.h){
+      this.ball.vx = -Math.abs(this.ball.vx); this.ball.vx *= 1.03;
     }
-  }
+    // score
+    if(this.ball.x < -20){ this.score[1]++; this.resetBall(); }
+    if(this.ball.x > this.w + 20){ this.score[0]++; this.resetBall(); }
+    this.env.setScore(`${this.score[0]} : ${this.score[1]}`);
+  },
+  draw(ctx){
+    ctx.clearRect(0,0,ctx.canvas.width,ctx.canvas.height);
+    ctx.fillStyle = '#fff';
+    // paddles
+    ctx.fillRect(this.p1.x, this.p1.y, this.p1.w, this.p1.h);
+    ctx.fillRect(this.p2.x, this.p2.y, this.p2.w, this.p2.h);
+    // ball
+    ctx.beginPath(); ctx.arc(this.ball.x, this.ball.y, this.ball.r,0,Math.PI*2); ctx.fill();
+  },
+  resetBall(){
+    this.ball.x = this.w/2; this.ball.y = this.h/2;
+    this.ball.vx = 200*(Math.random()>0.5?1:-1); this.ball.vy = 120*(Math.random()>0.5?1:-1);
+    this.paused = true;
+  },
+  cleanup(){ window.removeEventListener('keydown', this.keydown); window.removeEventListener('keyup', this.keyup); }
 });
 
-// prevent context menu on right click
-window.addEventListener('contextmenu', (e)=> e.preventDefault());
+/* ----------------------------- GAME 2: SNAKE -----------------------------*/
+registerGame({
+  id:'snake',
+  title:'Snake',
+  description:'Snake klasik: makan point, tumbuh panjang, jangan tabrakan.',
+  instructions:'WASD / Panah untuk bergerak. Makan kotak hijau untuk tumbuh.',
+  controls:'WASD / Arrows',
+  init(canvas, ctx, env){
+    this.grid = 20;
+    this.cell = Math.floor(Math.min(canvas.width, canvas.height) / this.grid);
+    this.reset();
+    this.kdown = (e)=>{
+      const k = e.key.toLowerCase();
+      if(k==='arrowup' || k==='w') this.setDir(0,-1);
+      if(k==='arrowdown' || k==='s') this.setDir(0,1);
+      if(k==='arrowleft'|| k==='a') this.setDir(-1,0);
+      if(k==='arrowright'|| k==='d') this.setDir(1,0);
+    };
+    window.addEventListener('keydown', this.kdown);
+    this.env = env;
+  },
+  reset(){
+    this.snake = [{x:5,y:5}]; this.dir = {x:1,y:0}; this.spawnFood(); this.timer=0; this.speed=6; this.score=0; this.env && this.env.setScore(this.score);
+  },
+  setDir(x,y){ if(this.dir.x === -x && this.dir.y === -y) return; this.dir={x,y}; },
+  spawnFood(){ this.food = { x: Math.floor(Math.random()*this.grid), y: Math.floor(Math.random()*this.grid) }; },
+  update(dt){
+    this.timer += dt;
+    if(this.timer > 1/this.speed){
+      this.timer = 0;
+      const head = { x: this.snake[0].x + this.dir.x, y: this.snake[0].y + this.dir.y };
+      // wrap
+      head.x = (head.x + this.grid) % this.grid;
+      head.y = (head.y + this.grid) % this.grid;
+      // collision with self
+      if(this.snake.some(s=>s.x===head.x && s.y===head.y)){ this.reset(); return; }
+      this.snake.unshift(head);
+      if(head.x === this.food.x && head.y === this.food.y){
+        this.score += 1; this.env && this.env.setScore(this.score); this.spawnFood();
+      } else this.snake.pop();
+    }
+  },
+  draw(ctx){
+    ctx.clearRect(0,0,ctx.canvas.width,ctx.canvas.height);
+    const cw = ctx.canvas.width, ch = ctx.canvas.height;
+    const cell = Math.floor(Math.min(cw,ch)/this.grid);
+    // draw food
+    ctx.fillStyle = '#7ED321'; ctx.fillRect(this.food.x*cell+2, this.food.y*cell+2, cell-4, cell-4);
+    // draw snake
+    ctx.fillStyle = '#86C232';
+    for(const s of this.snake) ctx.fillRect(s.x*cell, s.y*cell, cell-1, cell-1);
+  },
+  cleanup(){ window.removeEventListener('keydown', this.kdown); }
+});
 
-/* ========= Player physics & movement ========= */
-let velocity = new THREE.Vector3();
-let canJump = false;
-const moveState = { forward:false, back:false, left:false, right:false };
-const onKey = (e, down)=>{
-  if(e.code === 'KeyW') moveState.forward = down;
-  if(e.code === 'KeyS') moveState.back = down;
-  if(e.code === 'KeyA') moveState.left = down;
-  if(e.code === 'KeyD') moveState.right = down;
-  if(e.code === 'Space' && down && canJump){
-    velocity.y = 6;
-    canJump = false;
-  }
-};
-window.addEventListener('keydown', (e)=> onKey(e, true));
-window.addEventListener('keyup', (e)=> onKey(e, false));
+/* ----------------------------- GAME 3: BREAKOUT -----------------------------*/
+registerGame({
+  id:'breakout',
+  title:'Breakout',
+  description:'Pecahkan semua bata dengan memantulkan bola.',
+  instructions:'Gerak paddle: kiri/kanan. Space untuk mulai.',
+  controls:'Arrow keys / A D',
+  init(canvas, ctx, env){
+    this.w = canvas.width; this.h = canvas.height;
+    this.paddle = {w:100,h:12,x:this.w/2-50,y:this.h-40,vx:0};
+    this.ball = {x:this.w/2,y:this.h/2,r:8,vx:200*(Math.random()>0.5?1:-1),vy:-200};
+    this.bricks = [];
+    this.rows=5; this.cols=9;
+    const bw = (this.w-60)/this.cols, bh=18;
+    for(let r=0;r<this.rows;r++){
+      for(let c=0;c<this.cols;c++){
+        this.bricks.push({x:30+c*bw,y:40+r*(bh+8),w:bw-8,h:bh,alive:true});
+      }
+    }
+    this.paused = true; this.score=0;
+    this.kd=(e)=>{ if(e.key==='ArrowLeft' || e.key.toLowerCase()==='a') this.paddle.vx=-420; if(e.key==='ArrowRight' || e.key.toLowerCase()==='d') this.paddle.vx=420; if(e.key===' ') this.paused=!this.paused; };
+    this.ku=(e)=>{ if(e.key==='ArrowLeft' || e.key.toLowerCase()==='a') this.paddle.vx=0; if(e.key==='ArrowRight' || e.key.toLowerCase()==='d') this.paddle.vx=0; };
+    window.addEventListener('keydown', this.kd); window.addEventListener('keyup', this.ku);
+    this.env = env;
+  },
+  update(dt){
+    if(this.paused) return;
+    this.paddle.x += this.paddle.vx*dt;
+    this.paddle.x = Math.max(0, Math.min(this.w-this.paddle.w, this.paddle.x));
+    this.ball.x += this.ball.vx*dt; this.ball.y += this.ball.vy*dt;
+    if(this.ball.x - this.ball.r < 0 || this.ball.x + this.ball.r > this.w) this.ball.vx *= -1;
+    if(this.ball.y - this.ball.r < 0) this.ball.vy *= -1;
+    // paddle collision
+    if(this.ball.y + this.ball.r > this.paddle.y && this.ball.x > this.paddle.x && this.ball.x < this.paddle.x + this.paddle.w){
+      this.ball.vy = -Math.abs(this.ball.vy);
+      // change vx based on hit position
+      const hitPos = (this.ball.x - (this.paddle.x + this.paddle.w/2)) / (this.paddle.w/2);
+      this.ball.vx += hitPos * 150;
+    }
+    // bricks
+    for(const b of this.bricks){
+      if(!b.alive) continue;
+      if(this.ball.x > b.x && this.ball.x < b.x+b.w && this.ball.y - this.ball.r < b.y+b.h && this.ball.y + this.ball.r > b.y){
+        b.alive=false; this.ball.vy *= -1; this.score += 10; this.env && this.env.setScore(this.score); break;
+      }
+    }
+    if(this.ball.y - this.ball.r > this.h){ // lose: reset
+      this.reset();
+    }
+  },
+  draw(ctx){
+    ctx.clearRect(0,0,ctx.canvas.width,ctx.canvas.height);
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(this.paddle.x, this.paddle.y, this.paddle.w, this.paddle.h);
+    ctx.beginPath(); ctx.arc(this.ball.x, this.ball.y, this.ball.r,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle='#FF6B6B';
+    for(const b of this.bricks) if(b.alive) ctx.fillRect(b.x,b.y,b.w,b.h);
+  },
+  reset(){
+    this.ball.x = this.w/2; this.ball.y = this.h/2; this.ball.vx = 200*(Math.random()>0.5?1:-1); this.ball.vy = -200; this.paused = true; this.score = 0; this.env && this.env.setScore(0);
+  },
+  cleanup(){ window.removeEventListener('keydown', this.kd); window.removeEventListener('keyup', this.ku); }
+});
 
-/* simple player collision against blocks: treat player as point at feet at camera.position */
-function getBlockAtWorld(wx, wy, wz){
-  const info = worldToChunk(Math.floor(wx), Math.floor(wy), Math.floor(wz));
-  if(!info) return null;
-  const c = worldChunks[chunkKey(info.cx, info.cz)];
-  if(!c) return null;
-  const stack = c.blocks[info.lx][info.lz];
-  if(stack.length === 0) return null;
-  return { blockId: stack[Math.min(stack.length-1, Math.floor(wy))], height: stack.length };
+/* ----------------------------- GAME 4: FLAPPY -----------------------------*/
+registerGame({
+  id:'flappy',
+  title:'Flappy Mini',
+  description:'Flappy-style: tekan Space / klik untuk melompat, lewati celah pipa.',
+  instructions:'Klik canvas atau tekan Space untuk flap.',
+  controls:'Space / Click',
+  init(canvas, ctx, env){
+    this.w=canvas.width; this.h=canvas.height;
+    this.bird={x:100,y:this.h/2,r:12,vy:0};
+    this.pipes=[]; this.timer=0; this.score=0; this.speed=120;
+    this.kd=(e)=>{ if(e.key===' ') this.flap(); };
+    this.md=(e)=>{ this.flap(); };
+    window.addEventListener('keydown', this.kd); canvas.addEventListener('mousedown', this.md);
+    this.env = env;
+  },
+  flap(){ this.bird.vy = -240; },
+  update(dt){
+    this.bird.vy += 600*dt; this.bird.y += this.bird.vy*dt;
+    this.timer += dt;
+    if(this.timer > 1.4){ this.timer=0; // spawn pipe
+      const gap = 120; const cy = 80 + Math.random()*(this.h-240);
+      this.pipes.push({x:this.w+40,y:0,w:60,h:cy});
+      this.pipes.push({x:this.w+40,y:cy+gap,w:60,h:this.h-(cy+gap)});
+    }
+    for(const p of this.pipes) p.x -= this.speed*dt;
+    // remove offscreen
+    this.pipes = this.pipes.filter(p=>p.x + p.w > -50);
+    // collision
+    for(const p of this.pipes){
+      if(this.bird.x > p.x && this.bird.x < p.x + p.w && this.bird.y - this.bird.r < p.y + p.h && this.bird.y + this.bird.r > p.y){
+        this.reset(); return;
+      }
+    }
+    // ground/sky
+    if(this.bird.y - this.bird.r < 0 || this.bird.y + this.bird.r > this.h){ this.reset(); return; }
+    // score via passing center of first pipe pair
+    for(let i=0;i<this.pipes.length;i+=2){
+      const mid = this.pipes[i].x + this.pipes[i].w/2;
+      if(!this.pipes[i].passed && mid < this.bird.x){ this.pipes[i].passed = true; this.score++; this.env && this.env.setScore(this.score); }
+    }
+  },
+  draw(ctx){
+    ctx.clearRect(0,0,ctx.canvas.width,ctx.canvas.height);
+    ctx.fillStyle='#FFD166'; ctx.beginPath(); ctx.arc(this.bird.x,this.bird.y,this.bird.r,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle='#2D6A4F';
+    for(const p of this.pipes) ctx.fillRect(p.x,p.y,p.w,p.h);
+  },
+  reset(){ this.bird.y=this.h/2; this.bird.vy=0; this.pipes=[]; this.timer=0; this.score=0; this.env && this.env.setScore(0); },
+  cleanup(){ window.removeEventListener('keydown', this.kd); canvas.removeEventListener('mousedown', this.md); }
+});
+
+/* ----------------------------- GAME 5: MEMORY (Matching) -----------------------------*/
+registerGame({
+  id:'memory',
+  title:'Memory Match',
+  description:'Balik kartu untuk cari pasangan. Cocokkan semua kartu.',
+  instructions:'Klik kartu untuk membalik. Ingat posisi kartu!',
+  controls:'Mouse / Touch',
+  init(canvas, ctx, env){
+    this.cols=6; this.rows=4; this.total=this.cols*this.rows;
+    // build pairs
+    const pairs = [];
+    for(let i=0;i<this.total/2;i++) pairs.push(i), pairs.push(i);
+    // shuffle
+    for(let i=pairs.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [pairs[i],pairs[j]]=[pairs[j],pairs[i]]; }
+    this.cards = []; let idx=0;
+    for(let r=0;r<this.rows;r++){ for(let c=0;c<this.cols;c++){ this.cards.push({x:c,y:r,val:pairs[idx++], flipped:false, matched:false}); } }
+    this.w = canvas.width; this.h = canvas.height;
+    this.cardW = Math.floor(Math.min(this.w/this.cols, this.h/this.rows)) - 8;
+    this.lock=false; this.env=env; this.score=0;
+    this.md = (e)=>{ const rect = canvas.getBoundingClientRect(); const mx = e.clientX - rect.left, my = e.clientY - rect.top; this.onClick(mx,my); };
+    canvas.addEventListener('mousedown', this.md);
+  },
+  onClick(mx,my){
+    if(this.lock) return;
+    for(const c of this.cards){
+      const cx = 10 + c.x*(this.cardW+8), cy = 10 + c.y*(this.cardW+8);
+      if(mx>cx && mx<cx+this.cardW && my>cy && my<cy+this.cardW && !c.flipped && !c.matched){
+        c.flipped=true;
+        const flipped = this.cards.filter(x=>x.flipped && !x.matched);
+        if(flipped.length===2){
+          if(flipped[0].val===flipped[1].val){ flipped[0].matched=flipped[1].matched=true; this.score++; this.env && this.env.setScore(this.score); if(this.cards.every(x=>x.matched)) alert('Kamu menang!'); }
+          else{ this.lock=true; setTimeout(()=>{ flipped[0].flipped=false; flipped[1].flipped=false; this.lock=false; }, 800); }
+        }
+        break;
+      }
+    }
+  },
+  update(dt){},
+  draw(ctx){
+    ctx.clearRect(0,0,ctx.canvas.width,ctx.canvas.height);
+    ctx.font = '16px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+    for(const c of this.cards){
+      const cx = 10 + c.x*(this.cardW+8), cy = 10 + c.y*(this.cardW+8);
+      ctx.fillStyle = c.flipped || c.matched ? '#86C232' : '#123';
+      ctx.fillRect(cx,cy,this.cardW,this.cardW);
+      if(c.flipped || c.matched){ ctx.fillStyle='#021'; ctx.fillText(c.val, cx+this.cardW/2, cy+this.cardW/2); }
+    }
+  },
+  cleanup(){ canvas.removeEventListener('mousedown', this.md); }
+});
+
+/* ----------------------------- GAME 6: DODGER -----------------------------*/
+registerGame({
+  id:'dodger',
+  title:'Dodger',
+  description:'Hindari batu yang jatuh sebanyak mungkin.',
+  instructions:'Gerak: A/D atau Panah kiri/kanan. Bertahan lama untuk skor tinggi.',
+  controls:'A D / Arrows',
+  init(canvas, ctx, env){
+    this.w=canvas.width; this.h=canvas.height;
+    this.player={x:this.w/2,y:this.h-50,w:40,h:20,speed:320};
+    this.rocks=[]; this.timer=0; this.spawnRate=0.8; this.score=0; this.env=env;
+    this.kd=(e)=>{ if(e.key==='a' || e.key==='ArrowLeft') this.player.vx=-1; if(e.key==='d'||e.key==='ArrowRight') this.player.vx=1; };
+    this.ku=(e)=>{ if(e.key==='a' || e.key==='ArrowLeft') this.player.vx=0; if(e.key==='d'||e.key==='ArrowRight') this.player.vx=0; };
+    window.addEventListener('keydown', this.kd); window.addEventListener('keyup', this.ku);
+  },
+  update(dt){
+    // spawn
+    this.timer += dt;
+    if(this.timer > this.spawnRate){ this.timer=0; this.rocks.push({x:Math.random()*this.w,y:-20,r:12,vy:100+Math.random()*120}); if(this.spawnRate>0.25) this.spawnRate *= 0.99; }
+    // player move
+    this.player.x += (this.player.vx||0) * this.player.speed * dt;
+    this.player.x = Math.max(0, Math.min(this.w-this.player.w, this.player.x));
+    // rocks
+    for(const r of this.rocks){ r.y += r.vy*dt; }
+    // collision & remove
+    for(let i=this.rocks.length-1;i>=0;i--){
+      const r = this.rocks[i];
+      if(r.y > this.h+50) { this.rocks.splice(i,1); this.score++; this.env && this.env.setScore(this.score); continue; }
+      if(r.x+ r.r > this.player.x && r.x - r.r < this.player.x + this.player.w && r.y + r.r > this.player.y && r.y - r.r < this.player.y + this.player.h){
+        alert('Kena! Skor: '+this.score); this.reset(); return;
+      }
+    }
+  },
+  draw(ctx){
+    ctx.clearRect(0,0,ctx.canvas.width,ctx.canvas.height);
+    ctx.fillStyle='#86C232'; ctx.fillRect(this.player.x,this.player.y,this.player.w,this.player.h);
+    ctx.fillStyle='#A42'; for(const r of this.rocks) ctx.beginPath(), ctx.arc(r.x,r.y,r.r,0,Math.PI*2), ctx.fill();
+  },
+  reset(){ this.rocks=[]; this.score=0; this.spawnRate=0.8; this.env && this.env.setScore(0); },
+  cleanup(){ window.removeEventListener('keydown', this.kd); window.removeEventListener('keyup', this.ku); }
+});
+
+/* ----------------------------- TEMPLATES (14 slots) -----------------------------
+   These templates are minimal game shells. Copy & implement logic inside init/update/draw.
+   Each template included with id template-1 ... template-14.
+ ---------------------------------------------------------------------------*/
+for(let i=1;i<=14;i++){
+  registerGame({
+    id:`template-${i}`,
+    title:`Template Game ${i}`,
+    description:'Template game — klik Mainkan lalu isi logika di scripts.',
+    instructions:'Template: buka games.js, cari template-'+i+' dan implementasikan init/update/draw.',
+    controls:'TBD',
+    init(canvas, ctx, env){
+      // minimal example: show rotating square and click to increase score
+      this.t = 0; this.score = 0; this.env = env;
+      this.w = canvas.width; this.h = canvas.height;
+      this.md = (e)=>{ this.score++; this.env && this.env.setScore(this.score); };
+      canvas.addEventListener('mousedown', this.md);
+    },
+    update(dt){ this.t += dt; },
+    draw(ctx){
+      ctx.clearRect(0,0,ctx.canvas.width,ctx.canvas.height);
+      ctx.save();
+      ctx.translate(ctx.canvas.width/2, ctx.canvas.height/2);
+      ctx.rotate(this.t);
+      ctx.fillStyle = '#86C232';
+      const s = 40 + Math.sin(this.t*2)*10;
+      ctx.fillRect(-s/2,-s/2,s,s);
+      ctx.restore();
+    },
+    cleanup(){ canvas.removeEventListener('mousedown', this.md); }
+  });
 }
 
-/* ========= Save / Load ========= */
-document.getElementById('btn-save').addEventListener('click', ()=>{
-  const payload = {};
-  for(const k in worldChunks){
-    const c = worldChunks[k];
-    payload[k] = c.blocks;
-  }
-  localStorage.setItem('voxel_world_v1', JSON.stringify(payload));
-  alert('Dunia disimpan ke localStorage.');
-});
-document.getElementById('btn-load').addEventListener('click', ()=>{
-  const raw = localStorage.getItem('voxel_world_v1');
-  if(!raw){ alert('Tidak ada data tersimpan.'); return; }
-  const parsed = JSON.parse(raw);
-  for(const k in parsed){
-    if(worldChunks[k]){
-      worldChunks[k].blocks = parsed[k];
-      worldChunks[k].needsRebuild = true;
-      rebuildChunk(worldChunks[k]);
-    }
-  }
-  alert('Dunia dimuat.');
-});
+/* ----------------------------- init -----------------------------*/
+renderCatalog();
 
-/* ========= HUD pos update ========= */
-const posEl = document.getElementById('pos');
-function updateHudPos(){
-  posEl.textContent = `${camera.position.x.toFixed(1)}, ${camera.position.y.toFixed(1)}, ${camera.position.z.toFixed(1)}`;
-}
+/* show quick instruction if user has no games */
+if(GAMES.length===0) catalogEl.innerHTML='<p>Tidak ada game. Tambahkan game di games.js</p>';
 
-/* ========= Resize handler ========= */
-window.addEventListener('resize', ()=>{
-  renderer.setSize(window.innerWidth, window.innerHeight, false);
-  camera.aspect = window.innerWidth / window.innerHeight;
-  camera.updateProjectionMatrix();
-});
+/* Optional: keyboard focus on canvas when a game opens */
+document.addEventListener('click', (e)=>{ if(activeGame) canvas.focus(); });
 
-/* ========= Main loop ========= */
-let prevTime = performance.now();
-function animate(){
-  const time = performance.now();
-  const delta = (time - prevTime)/1000;
-  prevTime = time;
+/* Done. You can extend games by copying any of the functional games or templates.
+   To add more than 20 games: add new registerGame(...) entries above. */
 
-  // movement
-  const speed = controls.isLocked ? 6 : 0; // only move when locked
-  const dir = new THREE.Vector3();
-  if(moveState.forward) dir.z -= 1;
-  if(moveState.back) dir.z += 1;
-  if(moveState.left) dir.x -= 1;
-  if(moveState.right) dir.x += 1;
-  if(dir.lengthSq() > 0) dir.normalize();
-
-  // convert local camera direction to world movement
-  const camQuaternion = camera.quaternion;
-  const forward = new THREE.Vector3(0,0,-1).applyQuaternion(camQuaternion);
-  forward.y = 0; forward.normalize();
-  const right = new THREE.Vector3().crossVectors(forward, new THREE.Vector3(0,1,0)).normalize();
-
-  const moveVec = new THREE.Vector3();
-  moveVec.addScaledVector(forward, dir.z);
-  moveVec.addScaledVector(right, dir.x);
-  if(moveVec.lengthSq()>0) moveVec.normalize();
-
-  // apply horizontal velocity
-  camera.position.addScaledVector(moveVec, speed * delta);
-
-  // gravity
-  velocity.y -= 9.8 * delta;
-  camera.position.y += velocity.y * delta;
-
-  // simple collision with blocks below: ensure camera.y > top of column + eyeHeight
-  const footX = camera.position.x;
-  const footZ = camera.position.z;
-  const colInfo = worldToChunk(Math.floor(footX), 0, Math.floor(footZ));
-  let groundHeight = -100;
-  if(colInfo){
-    const c = worldChunks[chunkKey(colInfo.cx, colInfo.cz)];
-    if(c){
-      const st = c.blocks[colInfo.lx][colInfo.lz];
-      groundHeight = st.length - 0.001 - 0.0; // top y of blocks
-    }
-  }
-  const eyeHeight = 1.6;
-  const minEyeY = groundHeight + eyeHeight;
-  if(camera.position.y <= minEyeY){
-    velocity.y = 0;
-    camera.position.y = minEyeY;
-    canJump = true;
-  }
-
-  // rebuild any dirty chunks (we rebuild immediately in handlers but ensure)
-  for(const k in worldChunks){
-    const ch = worldChunks[k];
-    if(ch.needsRebuild) rebuildChunk(ch);
-  }
-
-  updateHudPos();
-
-  renderer.render(scene, camera);
-  requestAnimationFrame(animate);
-}
-animate();
-
-/* ========= Mobile: simple touch joystick (optional) ========= */
-// For brevity: the prototype focuses on desktop pointer-lock. To support mobile,
-// additional virtual joystick mapping should be implemented (touchstart/touchmove).
-// Simple fallback: if not pointer locked, user can still pan camera with OrbitControls or drag.
-// (We skip OrbitControls to keep code compact; could be added later.)
-
-/* ========= Final notes =========
- - This prototype uses InstancedMesh per chunk per block type. When blocks change,
-   we rebuild that chunk instanced meshes (moderate complexity).
- - For heavy worlds, consider chunking on demand, greedy meshing, texture atlases,
-   and GPU frustum culling.
- - To extend: add sounds, tools (pickaxe), block-break animation, particle effects, multiplayer.
-*/
+/* ----------------------------- End of file ----------------------------- */
