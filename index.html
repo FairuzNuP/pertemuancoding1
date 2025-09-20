@@ -1,21 +1,40 @@
-<!DOCTYPE html>
-<html lang="en">
+<!doctype html>
+<html lang="id">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>3D Story Game</title>
-  <link rel="stylesheet" href="style.css">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>MineLite — Simple Voxel Builder</title>
+  <link rel="stylesheet" href="styles.css" />
+  <!-- Three.js -->
+  <script src="https://unpkg.com/three@0.152.2/build/three.min.js"></script>
+  <script src="https://unpkg.com/three@0.152.2/examples/js/controls/PointerLockControls.js"></script>
 </head>
 <body>
-  <div id="ui">
-    <h1>🌌 3D Story Game</h1>
-    <p id="story">You wake up in a strange world... explore to find your way out.</p>
+  <div id="uiTop">
+    <div id="title">MineLite — Simple Voxel</div>
+    <div id="info">WASD / ↕←→, Space = jump • Click to lock pointer (desktop) • Tap joystick/buttons (mobile)</div>
+    <div id="inventory">Block: <span id="curBlock">Grass</span> (1-4)</div>
   </div>
-  <canvas id="gameCanvas"></canvas>
 
-  <!-- Three.js CDN -->
-  <script src="https://cdn.jsdelivr.net/npm/three@0.150.1/build/three.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/three@0.150.1/examples/js/controls/PointerLockControls.js"></script>
+  <div id="canvas-wrap"><canvas id="c"></canvas></div>
+
+  <!-- Mobile controls -->
+  <div id="touch-controls">
+    <div id="joystick-base"><div id="joystick-thumb"></div></div>
+    <div class="touch-buttons">
+      <button id="btn-place" class="touch-btn">Place</button>
+      <button id="btn-remove" class="touch-btn">Remove</button>
+    </div>
+  </div>
+
+  <!-- Block selector (desktop/mobile) -->
+  <div id="selector">
+    <button class="sel" data-type="grass">1</button>
+    <button class="sel" data-type="dirt">2</button>
+    <button class="sel" data-type="stone">3</button>
+    <button class="sel" data-type="wood">4</button>
+  </div>
+
   <script src="game.js"></script>
 </body>
 </html>
