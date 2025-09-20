@@ -1,42 +1,23 @@
-<!doctype html>
-<html lang="id">
+<!DOCTYPE html>
+<html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <title>3D Collector — Cross-platform Demo</title>
-  <link rel="stylesheet" href="styles.css" />
-  <!-- three.js CDN -->
-  <script src="https://unpkg.com/three@0.152.2/build/three.min.js"></script>
-  <!-- optional orbit controls (used for desktop camera control fallback) -->
-  <script src="https://unpkg.com/three@0.152.2/examples/js/controls/OrbitControls.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Minecraft Clone Advanced</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div id="game-root">
-    <div id="hud">
-      <div id="score">Skor: 0</div>
-      <div id="lives">Nyawa: 3</div>
-      <button id="restart" class="btn">Restart</button>
-    </div>
-
-    <div id="canvas-wrap">
-      <canvas id="c"></canvas>
-    </div>
-
-    <!-- Mobile controls -->
-    <div id="touch-controls">
-      <div id="joystick-base">
-        <div id="joystick-thumb"></div>
-      </div>
-      <button id="fire-btn" class="touch-btn">Tembak</button>
-    </div>
-
-    <div id="help" class="help">
-      <p><strong>Kontrol</strong></p>
-      <p>Desktop: WASD / Panah — gerak. Mouse — putar kamera. Klik — tembak.</p>
-      <p>Mobile: gunakan joystick kiri, tombol Tembak kanan bawah.</p>
-    </div>
+  <div id="ui">
+    <h1>Minecraft Clone (Advanced)</h1>
+    <p>WASD = Bergerak | Spasi = Lompat | Klik kiri = Hancurkan | Klik kanan = Taruh | 1-3 = Ganti blok</p>
+    <p>Blok terpilih: <span id="blockName">Grass</span></p>
+    <button id="startButton">▶ Mulai Main</button>
   </div>
 
+  <canvas id="gameCanvas"></canvas>
+
+  <script src="https://cdn.jsdelivr.net/npm/three@0.150.1/build/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.150.1/examples/js/controls/PointerLockControls.js"></script>
   <script src="game.js"></script>
 </body>
 </html>
