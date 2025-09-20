@@ -1,46 +1,42 @@
 <!doctype html>
 <html lang="id">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Star Collector — Game 2D</title>
-<link rel="stylesheet" href="styles.css" />
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>3D Collector — Cross-platform Demo</title>
+  <link rel="stylesheet" href="styles.css" />
+  <!-- three.js CDN -->
+  <script src="https://unpkg.com/three@0.152.2/build/three.min.js"></script>
+  <!-- optional orbit controls (used for desktop camera control fallback) -->
+  <script src="https://unpkg.com/three@0.152.2/examples/js/controls/OrbitControls.js"></script>
 </head>
 <body>
-  <div class="wrap">
-    <header>
-      <h1>Star Collector — Game 2D (Top-down)</h1>
-      <div class="muted">Kumpulkan bintang, tembak musuh, capai skor tertinggi!</div>
-    </header>
-
-    <div class="game-box">
-      <canvas id="game" width="800" height="520" tabindex="0" aria-label="Game canvas"></canvas>
+  <div id="game-root">
+    <div id="hud">
+      <div id="score">Skor: 0</div>
+      <div id="lives">Nyawa: 3</div>
+      <button id="restart" class="btn">Restart</button>
     </div>
 
-    <aside class="panel">
-      <h2>Status</h2>
-      <div class="hud-row"><div>Skor</div><div id="score" class="big">0</div></div>
-      <div class="hud-row"><div>Nyawa</div><div id="lives" class="big">3</div></div>
-      <div class="hud-row"><div>Level</div><div id="level" class="big">1</div></div>
-      <div style="height:8px"></div>
-      <div class="controls">
-        <div><strong>Kontrol</strong></div>
-        <div>Gerak: <code>W A S D</code> atau panah</div>
-        <div>Tembak: <kbd>Mouse klik</kbd></div>
-        <div>Pause: <kbd>P</kbd> • Restart: <kbd>R</kbd></div>
+    <div id="canvas-wrap">
+      <canvas id="c"></canvas>
+    </div>
+
+    <!-- Mobile controls -->
+    <div id="touch-controls">
+      <div id="joystick-base">
+        <div id="joystick-thumb"></div>
       </div>
+      <button id="fire-btn" class="touch-btn">Tembak</button>
+    </div>
 
-      <div style="height:10px"></div>
-      <button id="restartBtn" class="btn">Restart</button>
-      <button id="muteBtn" class="btn" style="margin-left:8px">Mute</button>
-
-      <div style="height:12px"></div>
-      <div class="muted">Tip: musuh semakin cepat tiap level. Kumpulkan 10 bintang untuk naik level.</div>
-    </aside>
-
-    <footer>buatan fairuz — buka <code>index.html</code> untuk main. Esc untuk keluar fokus.</footer>
+    <div id="help" class="help">
+      <p><strong>Kontrol</strong></p>
+      <p>Desktop: WASD / Panah — gerak. Mouse — putar kamera. Klik — tembak.</p>
+      <p>Mobile: gunakan joystick kiri, tombol Tembak kanan bawah.</p>
+    </div>
   </div>
 
-<script src="game.js"></script>
+  <script src="game.js"></script>
 </body>
 </html>
