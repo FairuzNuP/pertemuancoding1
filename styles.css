@@ -1,31 +1,45 @@
+/* styles.css - simple responsive UI */
 :root{
-  --bg:#07142a;
-  --panel:#0f2340;
-  --accent:#ffd166;
-  --muted:#9fb0c4;
-  font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, Arial;
+  --bg: #07121a;
+  --panel: rgba(255,255,255,0.04);
+  --accent: #86C232;
+  --muted: #9fb0c4;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial;
 }
-html,body{height:100%;margin:0;background:linear-gradient(180deg,#021022,#07142a);color:#eaf6ff}
-.wrap{max-width:1000px;margin:18px auto;padding:12px;display:grid;grid-template-columns:1fr 300px;gap:16px;}
-header{grid-column:1/-1;text-align:center}
-h1{margin:4px 0;font-size:1.4rem}
-.game-box{
-  background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
-  border:1px solid rgba(255,255,255,0.04);
-  border-radius:10px;padding:10px;
-  display:flex;justify-content:center;align-items:center;
+html,body{height:100%;margin:0;background:linear-gradient(180deg,#07121a,#041726);color:#eef6ff}
+#game-root{position:relative;height:100vh;overflow:hidden}
+#canvas-wrap{position:absolute;inset:0}
+canvas{display:block;width:100%;height:100%}
+
+/* HUD */
+#hud{position:fixed;left:12px;top:12px;display:flex;gap:10px;align-items:center;z-index:30}
+#hud .btn{margin-left:8px}
+#score,#lives{background:var(--panel);padding:8px 10px;border-radius:8px;border:1px solid rgba(255,255,255,0.03);font-weight:600;color:var(--accent)}
+
+/* buttons */
+.btn{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06);padding:8px 10px;border-radius:8px;color:#e9f6ff;cursor:pointer}
+
+/* Mobile touch controls */
+#touch-controls{position:fixed;left:12px;bottom:12px;right:12px;pointer-events:none;z-index:40;display:flex;justify-content:space-between;align-items:flex-end}
+#joystick-base{
+  pointer-events:auto;
+  width:120px;height:120px;border-radius:999px;background:rgba(0,0,0,0.25);backdrop-filter: blur(4px);
+  display:flex;align-items:center;justify-content:center;border:1px solid rgba(255,255,255,0.03)
 }
-canvas{border-radius:8px;background:#071a2b;display:block;max-width:100%;}
-.panel{
-  background:var(--panel);padding:12px;border-radius:8px;border:1px solid rgba(255,255,255,0.03);
+#joystick-thumb{
+  width:52px;height:52px;border-radius:999px;background:rgba(255,255,255,0.12);transform:translate(0,0)
 }
-.panel h2{margin:0 0 8px 0}
-.hud-row{display:flex;justify-content:space-between;align-items:center;margin:6px 0}
-.btn{display:inline-block;padding:8px 10px;border-radius:8px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.03);color:#eaf6ff;text-decoration:none;cursor:pointer}
-.muted{color:var(--muted);font-size:0.95rem}
-.controls{font-size:0.95rem;margin-top:8px;line-height:1.5}
-.big{font-weight:700;color:var(--accent)}
-footer{grid-column:1/-1;text-align:center;color:var(--muted);font-size:0.9rem;margin-top:6px}
-@media (max-width:900px){
-  .wrap{grid-template-columns:1fr; padding:8px}
+.touch-btn{
+  pointer-events:auto;
+  width:96px;height:96px;border-radius:999px;background:linear-gradient(180deg,#ffb86b,#ff8c42);
+  border:0;font-weight:700;color:#111;font-size:16px;display:flex;align-items:center;justify-content:center;margin-right:12px;
+  box-shadow:0 6px 20px rgba(0,0,0,0.45)
+}
+
+/* Help small pane */
+.help{position:fixed;right:12px;bottom:12px;background:rgba(255,255,255,0.03);padding:8px;border-radius:8px;border:1px solid rgba(255,255,255,0.03);color:var(--muted);z-index:30;font-size:13px}
+
+/* hide touch controls on wide screens */
+@media(min-width:900px){
+  #touch-controls{display:none}
 }
