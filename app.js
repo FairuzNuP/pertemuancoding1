@@ -1,6 +1,5 @@
-// app.js — World clocks + draggable bottom sheet
+// app.js — perbaikan: semua jam tampil & sheet terbuka default
 
-// --- Zones to show by default (label, IANA zone or offset) ---
 const PRESET_ZONES = [
   ["UTC","UTC"],
   ["London","Europe/London"],
@@ -21,7 +20,6 @@ const PRESET_ZONES = [
   ["Honolulu","Pacific/Honolulu"]
 ];
 
-// DOM refs
 const localClockEl = document.querySelector('#localClock');
 const clocksListEl = document.querySelector('#clocksList');
 const tzSearchEl = document.querySelector('#tzSearch');
@@ -29,11 +27,9 @@ const presetSelect = document.querySelector('#presetTz');
 const addBtn = document.querySelector('#addTz');
 const btnTop = document.querySelector('#btnTop');
 
-// bottom sheet refs
 const sheet = document.getElementById('sheet');
 const sheetHandle = document.getElementById('sheetHandle');
 
-// load presets into select
 (function populateSelect(){
   PRESET_ZONES.forEach(([label, id])=>{
     const o = document.createElement('option');
@@ -42,7 +38,6 @@ const sheetHandle = document.getElementById('sheetHandle');
   });
 })();
 
-// helper: build clock card element
 function makeClockCard(label, zoneId){
   const el = document.createElement('div'); el.className = 'clock-card';
   el.innerHTML = `
@@ -55,10 +50,18 @@ function makeClockCard(label, zoneId){
   return el;
 }
 
-// state: list of cards
 const cards = [];
+const zoneSet = new Set(); // mencegah duplikat
 
-// initial load
+function addClock(label, zoneSpec){
+  if(zoneSet.has(zoneSpec)) return null; // already added
+  const card = makeClockCard(label, zoneSpec);
+  clocksListEl.appendChild(card);
+  cards.push(card);
+  zoneSet.add(zoneSpec);
+  return card;
+}
+
 function addPresetCards(){
   PRESET_ZONES.forEach(([label,id])=>{
     addClock(label, id);
@@ -66,92 +69,89 @@ function addPresetCards(){
 }
 addPresetCards();
 
-// addClock: label can be user text, id must be IANA zone or 'UTC±n' string
-function addClock(label, zoneSpec){
-  const card = makeClockCard(label, zoneSpec);
-  clocksListEl.appendChild(card);
-  cards.push(card);
-  return card;
+// Utility: try to format with Intl; return {time, meta}
+function formatForZone(now, zone){
+  try{
+    if(!zone) throw new Error('no zone');
+    // Normalize special-case "UTC"
+    if(String(zone).toUpperCase() === 'UTC'){
+      const timeText = now.toLocaleTimeString('en-GB', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit', timeZone: 'UTC' });
+      return { time: timeText, meta: 'UTC' };
+    }
+    // Format time
+    const timeText = new Intl.DateTimeFormat(undefined, { timeZone: zone, hour: '2-digit', minute:'2-digit', second:'2-digit', hour12:false }).format(now);
+    // try to get tz name (may vary by browser)
+    let tzName = '';
+    try {
+      const parts = new Intl.DateTimeFormat(undefined, { timeZone: zone, timeZoneName: 'short' }).formatToParts(now);
+      tzName = parts.find(p=>p.type==='timeZoneName')?.value || '';
+    } catch(e) {
+      tzName = '';
+    }
+    return { time: timeText, meta: tzName || zone };
+  } catch(e){
+    return { time: '—', meta: 'Invalid zone' };
+  }
 }
 
-// update times every second
 function updateAll(){
   const now = new Date();
   // local
-  localClockEl.querySelector('.time').textContent = now.toLocaleTimeString();
-  localClockEl.querySelector('.date').textContent = now.toLocaleDateString();
-  // cards
-  cards.forEach(c=>{
+  try{
+    localClockEl.querySelector('.time').textContent = now.toLocaleTimeString();
+    localClockEl.querySelector('.date').textContent = now.toLocaleDateString();
+  } catch(e){ /* ignore */ }
+
+  // all cards
+  for(const c of cards){
     const zone = c._zoneId;
-    let timeText = '--';
-    let meta = '';
-    try{
-      if(zone.toUpperCase() === 'UTC'){
-        timeText = now.toLocaleTimeString('en-GB',{timeZone:'UTC',hour12:false});
-        meta = 'UTC';
-      } else {
-        // use Intl to format in zone if supported
-        timeText = new Intl.DateTimeFormat(undefined, { timeZone: zone, hour: '2-digit', minute:'2-digit', second:'2-digit', hour12: false }).format(now);
-        // meta: offset and date
-        const parts = new Intl.DateTimeFormat(undefined, { timeZone: zone, timeZoneName: 'short' }).formatToParts(now);
-        const tzName = parts.find(p=>p.type==='timeZoneName')?.value || '';
-        meta = tzName;
-      }
-    }catch(e){
-      timeText = '—';
-      meta = 'Invalid zone';
-    }
-    c.querySelector('.time').textContent = timeText;
-    c.querySelector('.meta').textContent = meta;
-  });
+    const formatted = formatForZone(now, zone);
+    const timeEl = c.querySelector('.time');
+    const metaEl = c.querySelector('.meta');
+    if(timeEl) timeEl.textContent = formatted.time;
+    if(metaEl) metaEl.textContent = formatted.meta;
+  }
 }
 updateAll();
 setInterval(updateAll, 1000);
 
-// add button handler (from select or search)
+// add button
 addBtn.addEventListener('click', ()=>{
   const search = tzSearchEl.value.trim();
   const pick = presetSelect.value;
   if(search){
-    // try accept either IANA id like "Asia/Tokyo" or "UTC+7" or city name
-    // If user typed a known IANA zone present in presets, use it
     addClock(search, search);
     tzSearchEl.value = '';
   } else if(pick){
-    // find friendly label
     const lab = (PRESET_ZONES.find(p=>p[1]===pick)||[pick])[0];
     addClock(lab, pick);
     presetSelect.value = '';
   }
 });
 
-// scroll to top when pressing 'Top'
+// Top button
 btnTop.addEventListener('click', ()=> window.scrollTo({top:0,behavior:'smooth'}));
-
-// keyboard Enter on search
 tzSearchEl.addEventListener('keydown', (e)=>{ if(e.key==='Enter') addBtn.click(); });
 
-// --- Bottom sheet drag behavior ---
+// ---------------- Bottom sheet drag behavior (open by default) ---------------
 let startY = 0;
 let currentY = 0;
 let dragging = false;
 const vh = window.innerHeight;
-const collapsedY = vh * 0.56; // same as CSS collapsed translate
+const collapsedY = vh * 0.56;
 const halfY = vh * 0.28;
 const openY = vh * 0.06;
 
 function setSheetTranslate(y){
-  // clamp
   y = Math.max(openY, Math.min(collapsedY, y));
-  const t = y / vh;
   sheet.style.transform = `translateY(${y}px)`;
   currentY = y;
 }
 
-// initialize translate inline to match CSS
-setSheetTranslate(collapsedY);
+// initialize OPEN by default so all clocks visible
+sheet.classList.remove('collapsed','half'); sheet.classList.add('open');
+setSheetTranslate(openY);
 
-// pointer handlers
 function startDrag(e){
   dragging = true;
   startY = (e.touches ? e.touches[0].clientY : e.clientY);
@@ -169,7 +169,6 @@ function endDrag(e){
   if(!dragging) return;
   dragging = false;
   sheet.style.transition = '';
-  // snap to nearest
   const mid1 = (collapsedY + halfY) / 2;
   const mid2 = (halfY + openY) / 2;
   if(currentY > mid1) { sheet.classList.add('collapsed'); sheet.classList.remove('half','open'); setSheetTranslate(collapsedY); }
@@ -177,49 +176,38 @@ function endDrag(e){
   else { sheet.classList.add('open'); sheet.classList.remove('collapsed','half'); setSheetTranslate(openY); }
 }
 
-// attach events to handle bar
 sheetHandle.addEventListener('mousedown', startDrag);
 window.addEventListener('mousemove', moveDrag);
 window.addEventListener('mouseup', endDrag);
-
-// touch
 sheetHandle.addEventListener('touchstart', startDrag, {passive:false});
 window.addEventListener('touchmove', moveDrag, {passive:false});
 window.addEventListener('touchend', endDrag);
 
-// also allow tapping handle to toggle states
+// click to toggle
 sheetHandle.addEventListener('click', (e)=>{
-  if(dragging) return; // ignore click that is part of drag
-  if(sheet.classList.contains('collapsed')){ sheet.classList.remove('collapsed'); sheet.classList.add('half'); setSheetTranslate(halfY); }
-  else if(sheet.classList.contains('half')){ sheet.classList.remove('half'); sheet.classList.add('open'); setSheetTranslate(openY); }
-  else { sheet.classList.remove('open'); sheet.classList.add('collapsed'); setSheetTranslate(collapsedY); }
+  if(dragging) return;
+  if(sheet.classList.contains('open')){ sheet.classList.remove('open'); sheet.classList.add('half'); setSheetTranslate(halfY); }
+  else if(sheet.classList.contains('half')){ sheet.classList.remove('half'); sheet.classList.add('collapsed'); setSheetTranslate(collapsedY); }
+  else { sheet.classList.remove('collapsed'); sheet.classList.add('open'); setSheetTranslate(openY); }
 });
 
-// ensure sheet translates correctly when resizing viewport
 window.addEventListener('resize', ()=> {
-  const vh2 = window.innerHeight;
-  setSheetTranslate(Math.max(openY, Math.min(collapsedY, currentY)));
+  // recompute sizes and keep sheet open
+  const nv = window.innerHeight;
+  // update constants (so snapping still sensible)
+  // Note: using local recalculation so behavior consistent after resize
+  // we simply keep current state
+  if(sheet.classList.contains('open')) setSheetTranslate(openY);
+  else if(sheet.classList.contains('half')) setSheetTranslate(halfY);
+  else setSheetTranslate(collapsedY);
 });
 
-// small accessibility: keyboard to open sheet (Space on handle)
+// accessibility
 sheetHandle.setAttribute('tabindex','0');
 sheetHandle.addEventListener('keydown', (e)=> {
   if(e.key === ' ' || e.key === 'Enter') { sheetHandle.click(); e.preventDefault(); }
 });
 
-// initial state classes
-sheet.classList.add('collapsed');
-
-// Update local clock label/time
-function updateLocalClock(){
-  const now = new Date();
-  localClockEl.querySelector('.time').textContent = now.toLocaleTimeString();
-  localClockEl.querySelector('.date').textContent = now.toLocaleDateString();
-}
-updateLocalClock();
-setInterval(updateLocalClock, 1000);
-
-// Accessibility: allow arrow keys in clocks list
 clocksListEl.addEventListener('keydown', (e)=>{
   if(e.key === 'ArrowDown') { clocksListEl.scrollBy({top:120,behavior:'smooth'}); e.preventDefault(); }
   if(e.key === 'ArrowUp') { clocksListEl.scrollBy({top:-120,behavior:'smooth'}); e.preventDefault(); }
