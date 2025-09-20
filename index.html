@@ -1,21 +1,68 @@
-<!DOCTYPE html>
-<html lang="en">
+<!doctype html>
+<html lang="id">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Minecraft Lite 3D</title>
-  <link rel="stylesheet" href="style.css">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>World Clocks — Jam Dunia</title>
+  <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <div id="ui">
-    <h1>🟩 Minecraft Lite</h1>
-    <p>WASD = bergerak | Mouse = lihat sekitar | Klik kiri = hancurkan | Klik kanan = taruh blok</p>
-  </div>
-  <canvas id="gameCanvas"></canvas>
+  <header class="topbar">
+    <div class="brand">🌍 Jam Dunia</div>
+    <div class="subtitle">Ketuk/seret panel bawah untuk melihat jam lebih banyak</div>
+  </header>
 
-  <!-- Three.js -->
-  <script src="https://cdn.jsdelivr.net/npm/three@0.150.1/build/three.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/three@0.150.1/examples/js/controls/PointerLockControls.js"></script>
-  <script src="game.js"></script>
+  <main class="main">
+    <section class="hero">
+      <h1>Jam di Seluruh Dunia</h1>
+      <p>Real-time, responsive, dan panel bawah bisa digeser ke atas untuk menampilkan daftar jam.</p>
+      <div class="clock-large" id="localClock">
+        <div class="city">Local Time</div>
+        <div class="time">--:--:--</div>
+        <div class="date">---</div>
+      </div>
+    </section>
+
+    <section class="info">
+      <div>
+        <strong>Petunjuk</strong>
+        <ul>
+          <li>Drag / geser panel bawah ke atas untuk membuka daftar jam.</li>
+          <li>Di dalam panel: ada search, pilih zona waktu tambahan, dan tombol 'Top' untuk kembali ke atas.</li>
+        </ul>
+      </div>
+    </section>
+  </main>
+
+  <!-- Bottom sheet (draggable) -->
+  <div id="sheet" class="sheet collapsed" aria-hidden="false">
+    <div id="sheetHandle" class="sheet-handle" role="button" aria-label="Geser panel">
+      <div class="handle-bar"></div>
+      <div class="sheet-title">Jam Dunia</div>
+      <div class="sheet-controls">
+        <button id="btnTop" title="Kembali ke atas">Top ↑</button>
+      </div>
+    </div>
+
+    <div class="sheet-body">
+      <div class="controls-row">
+        <input id="tzSearch" placeholder="Cari (mis. Tokyo, Asia/Tokyo, UTC+7) ..." />
+        <select id="presetTz">
+          <option value="">Tambahkan zona — pilih...</option>
+        </select>
+        <button id="addTz">Tambah</button>
+      </div>
+
+      <div id="clocksList" class="clocks-list" tabindex="0" aria-live="polite">
+        <!-- clock cards injected here -->
+      </div>
+
+      <div class="footer-note">
+        <small>Data zona waktu menggunakan built-in Intl API. Tombol refresh otomatis setiap 1 detik.</small>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
 </body>
 </html>
