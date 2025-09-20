@@ -1,53 +1,35 @@
 :root{
-  --bg: #071428;
-  --card: #0d1a2a;
+  --bg: #071422;
+  --panel: rgba(0,0,0,0.5);
+  --muted: #cfe8e0;
   --accent: #86C232;
-  --muted: #9fb0c4;
-  font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, Arial;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial;
 }
-*{box-sizing:border-box}
-html,body{height:100%;margin:0;background:linear-gradient(180deg,#041022,#071428);color:#eaf6ff}
-.site-header{padding:18px;text-align:center}
-.site-header h1{margin:0;font-size:1.8rem}
-.site-header .tagline{margin-top:6px;color:var(--muted)}
+html,body{height:100%;margin:0;background:linear-gradient(180deg,#041326,#071422);color:var(--muted);overflow:hidden}
+#canvas-wrap{position:fixed;inset:0}
+canvas{display:block;width:100%;height:100%}
 
-.container{max-width:1200px;margin:12px auto;padding:12px}
-.catalog{
-  display:grid;
-  grid-template-columns: repeat(auto-fill,minmax(200px,1fr));
-  gap:12px;
-}
+/* UI */
+#ui{position:fixed;left:12px;top:12px;z-index:50;display:flex;flex-direction:column;gap:8px}
+#topbar{display:flex;gap:12px;align-items:center}
+#title{font-weight:700;padding:8px 12px;border-radius:8px;background:var(--panel);box-shadow:0 6px 18px rgba(0,0,0,0.5)}
+#hud{display:flex;gap:8px;align-items:center}
+#hud .btn{margin-left:6px}
 
-/* card */
-.card{
-  background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
-  border:1px solid rgba(255,255,255,0.04);
-  padding:12px;border-radius:10px;
-  display:flex;flex-direction:column;gap:8px;align-items:start;
-}
-.card h3{margin:0;font-size:1.05rem}
-.card p{margin:0;color:var(--muted);font-size:0.95rem}
-.card .actions{margin-top:auto;width:100%;display:flex;gap:8px;justify-content:space-between}
-.btn{
-  background:var(--accent);color:#042014;border:none;padding:8px 10px;border-radius:8px;cursor:pointer;font-weight:700;
-}
-.link{background:transparent;border:1px solid rgba(255,255,255,0.06);padding:8px;border-radius:8px;color:var(--muted);cursor:pointer}
+/* story panel */
+.panel{position:fixed;left:50%;top:14%;transform:translateX(-50%);min-width:320px;max-width:720px;background:rgba(10,18,20,0.86);padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,0.04);z-index:60;color:var(--muted)}
+.hidden{display:none}
+#storyText{min-height:80px;margin-bottom:8px}
+.btn{background:var(--accent);color:#012;background-clip:padding-box;border-radius:8px;padding:8px 12px;border:none;cursor:pointer;font-weight:700}
 
-/* play area */
-.play-area{margin-top:12px}
-.play-area.hidden{display:none}
-.play-header{display:flex;gap:12px;align-items:center;margin-bottom:8px}
-.canvas-wrap{background:#021220;border-radius:8px;padding:12px;display:flex;align-items:center;justify-content:center;min-height:420px}
-canvas{background:#071a2b;border-radius:6px;max-width:100%;width:840px;height:480px;display:block}
+/* mobile touch controls */
+#touch-controls{position:fixed;left:12px;bottom:12px;right:12px;display:flex;justify-content:space-between;align-items:flex-end;pointer-events:none;z-index:60}
+#joystick-base{pointer-events:auto;width:110px;height:110px;border-radius:999px;background:rgba(0,0,0,0.25);display:flex;align-items:center;justify-content:center;border:1px solid rgba(255,255,255,0.04)}
+#joystick-thumb{width:48px;height:48px;border-radius:999px;background:rgba(255,255,255,0.12);transform:translate(0,0)}
+.touch-btn{pointer-events:auto;width:84px;height:84px;border-radius:999px;background:linear-gradient(180deg,#ffd37a,#ff9e4a);border:none;font-weight:700;color:#111;box-shadow:0 8px 26px rgba(0,0,0,0.45)}
 
-.play-body{display:grid;grid-template-columns: 1fr 300px;gap:12px}
-.side-panel{display:flex;flex-direction:column;gap:12px}
-.panel{background:var(--card);padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.03);color:var(--muted)}
-
-.site-footer{text-align:center;padding:12px;color:var(--muted);font-size:0.9rem;margin-top:20px}
-
-/* responsive */
-@media(max-width:980px){
-  .play-body{grid-template-columns:1fr}
-  canvas{width:100%;height:60vh}
+/* small adjustments */
+.touch-btn.small{width:64px;height:44px;border-radius:8px}
+@media(min-width:900px){
+  #touch-controls{display:none}
 }
