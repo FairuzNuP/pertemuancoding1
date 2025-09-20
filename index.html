@@ -1,46 +1,21 @@
-<!doctype html>
-<html lang="id">
+<!DOCTYPE html>
+<html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <title>Echoes of Isle — Story Explorer</title>
-  <link rel="stylesheet" href="styles.css" />
-  <!-- three.js -->
-  <script src="https://unpkg.com/three@0.152.2/build/three.min.js"></script>
-  <script src="https://unpkg.com/three@0.152.2/examples/js/controls/PointerLockControls.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>3D Story Game</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <div id="ui">
-    <div id="topbar">
-      <div id="title">Echoes of Isle</div>
-      <div id="hud">
-        <span id="pages">Pages: 0 / 5</span>
-        <button id="btn-reset" class="btn">Restart</button>
-      </div>
-    </div>
-
-    <div id="storyBox" class="panel hidden" aria-live="polite">
-      <div id="storyText"></div>
-      <div id="storyControls">
-        <button id="storyNext" class="btn">Next</button>
-        <button id="closeStory" class="btn">Close</button>
-      </div>
-    </div>
+    <h1>🌌 3D Story Game</h1>
+    <p id="story">You wake up in a strange world... explore to find your way out.</p>
   </div>
+  <canvas id="gameCanvas"></canvas>
 
-  <div id="canvas-wrap">
-    <canvas id="c"></canvas>
-  </div>
-
-  <!-- Mobile controls -->
-  <div id="touch-controls">
-    <div id="joystick-base"><div id="joystick-thumb"></div></div>
-    <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-end">
-      <button id="btn-interact" class="touch-btn">Interact</button>
-      <button id="btn-toggle-inv" class="touch-btn small">Story</button>
-    </div>
-  </div>
-
+  <!-- Three.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/three@0.150.1/build/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.150.1/examples/js/controls/PointerLockControls.js"></script>
   <script src="game.js"></script>
 </body>
 </html>
