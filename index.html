@@ -1,23 +1,46 @@
-<!DOCTYPE html>
-<html lang="en">
+<!doctype html>
+<html lang="id">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Minecraft Clone Advanced</title>
-  <link rel="stylesheet" href="style.css">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>VoxelCraft — Complex Web Prototype</title>
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <div id="ui">
-    <h1>Minecraft Clone (Advanced)</h1>
-    <p>WASD = Bergerak | Spasi = Lompat | Klik kiri = Hancurkan | Klik kanan = Taruh | 1-3 = Ganti blok</p>
-    <p>Blok terpilih: <span id="blockName">Grass</span></p>
-    <button id="startButton">▶ Mulai Main</button>
+    <div id="topbar">
+      <div id="title">VoxelCraft — Prototype</div>
+      <div id="controls">
+        <button id="btn-start" class="btn">Mulai (Pointer Lock)</button>
+        <button id="btn-save" class="btn">Simpan Dunia</button>
+        <button id="btn-load" class="btn">Muat Dunia</button>
+        <select id="blockPicker" aria-label="Pilih blok">
+          <option value="grass">Grass</option>
+          <option value="dirt">Dirt</option>
+          <option value="stone">Stone</option>
+          <option value="wood">Wood</option>
+          <option value="leaves">Leaves</option>
+        </select>
+      </div>
+    </div>
+
+    <div id="hud">
+      <div id="cross">+</div>
+      <div id="info">
+        <div>Pos: <span id="pos">0,0,0</span></div>
+        <div>Block: <span id="curBlock">Grass</span></div>
+      </div>
+    </div>
   </div>
 
-  <canvas id="gameCanvas"></canvas>
+  <div id="canvas-wrap">
+    <canvas id="c"></canvas>
+  </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/three@0.150.1/build/three.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/three@0.150.1/examples/js/controls/PointerLockControls.js"></script>
+  <!-- three.js + controls (non-module) -->
+  <script src="https://unpkg.com/three@0.152.2/build/three.min.js"></script>
+  <script src="https://unpkg.com/three@0.152.2/examples/js/controls/PointerLockControls.js"></script>
+
   <script src="game.js"></script>
 </body>
 </html>
