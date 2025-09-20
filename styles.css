@@ -1,35 +1,22 @@
-:root{
-  --bg: #071422;
-  --panel: rgba(0,0,0,0.5);
-  --muted: #cfe8e0;
-  --accent: #86C232;
-  font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial;
+body, html {
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  background: black;
+  font-family: sans-serif;
+  color: white;
 }
-html,body{height:100%;margin:0;background:linear-gradient(180deg,#041326,#071422);color:var(--muted);overflow:hidden}
-#canvas-wrap{position:fixed;inset:0}
-canvas{display:block;width:100%;height:100%}
-
-/* UI */
-#ui{position:fixed;left:12px;top:12px;z-index:50;display:flex;flex-direction:column;gap:8px}
-#topbar{display:flex;gap:12px;align-items:center}
-#title{font-weight:700;padding:8px 12px;border-radius:8px;background:var(--panel);box-shadow:0 6px 18px rgba(0,0,0,0.5)}
-#hud{display:flex;gap:8px;align-items:center}
-#hud .btn{margin-left:6px}
-
-/* story panel */
-.panel{position:fixed;left:50%;top:14%;transform:translateX(-50%);min-width:320px;max-width:720px;background:rgba(10,18,20,0.86);padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,0.04);z-index:60;color:var(--muted)}
-.hidden{display:none}
-#storyText{min-height:80px;margin-bottom:8px}
-.btn{background:var(--accent);color:#012;background-clip:padding-box;border-radius:8px;padding:8px 12px;border:none;cursor:pointer;font-weight:700}
-
-/* mobile touch controls */
-#touch-controls{position:fixed;left:12px;bottom:12px;right:12px;display:flex;justify-content:space-between;align-items:flex-end;pointer-events:none;z-index:60}
-#joystick-base{pointer-events:auto;width:110px;height:110px;border-radius:999px;background:rgba(0,0,0,0.25);display:flex;align-items:center;justify-content:center;border:1px solid rgba(255,255,255,0.04)}
-#joystick-thumb{width:48px;height:48px;border-radius:999px;background:rgba(255,255,255,0.12);transform:translate(0,0)}
-.touch-btn{pointer-events:auto;width:84px;height:84px;border-radius:999px;background:linear-gradient(180deg,#ffd37a,#ff9e4a);border:none;font-weight:700;color:#111;box-shadow:0 8px 26px rgba(0,0,0,0.45)}
-
-/* small adjustments */
-.touch-btn.small{width:64px;height:44px;border-radius:8px}
-@media(min-width:900px){
-  #touch-controls{display:none}
+#ui {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 10;
+  background: rgba(0,0,0,0.5);
+  padding: 10px;
+  border-radius: 8px;
+}
+canvas {
+  display: block;
+  width: 100vw;
+  height: 100vh;
 }
