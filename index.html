@@ -1,167 +1,630 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Fairuz Shop</title>
-  <style>
-    body { font-family: Arial, sans-serif; margin:0; padding:0; background:#f8f8f8; }
-    header { background:#28a745; padding:10px 20px; color:white; display:flex; align-items:center; justify-content:space-between; }
-    header .logo { display:flex; align-items:center; gap:8px; }
-    header .logo img { width:32px; height:32px; }
-    header input { width:50%; padding:8px; border:none; border-radius:5px; }
-    header .cart { cursor:pointer; font-weight:bold; }
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Fairuz Shop — Marketplace Prototype</title>
+<meta name="description" content="Prototype marketplace bergaya Tokopedia — katalog, filter, preview modal dengan gallery, cart (localStorage)." />
+<style>
+  :root{
+    --primary:#06b981; /* hijau */
+    --accent:#04a86b;
+    --muted:#6b7280;
+    --card:#ffffff;
+    --glass: rgba(2,6,23,0.04);
+    --maxw:1200px;
+    font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+    color-scheme: light;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%;margin:0;background:#f3f6f8;color:#0f172a}
+  a{color:inherit}
+  img{max-width:100%;display:block}
 
-    nav { background:#fff; padding:10px; display:flex; justify-content:center; gap:20px; border-bottom:1px solid #ddd; }
-    nav a { text-decoration:none; color:#333; font-weight:bold; }
-    nav a:hover { color:#28a745; }
+  /* HEADER */
+  .topbar{
+    position:sticky;top:0;z-index:60;background:white;border-bottom:1px solid rgba(0,0,0,0.06);
+    backdrop-filter: blur(6px);
+  }
+  .topbar .inner{max-width:var(--maxw);margin:0 auto;display:flex;gap:12px;align-items:center;padding:12px}
+  .brand{display:flex;align-items:center;gap:10px}
+  .brand .mark{width:44px;height:44px;border-radius:10px;background:linear-gradient(135deg,var(--primary),var(--accent));display:grid;place-items:center;color:white;font-weight:800;font-size:20px}
+  .brand h1{font-size:18px;margin:0}
+  .searchbar{flex:1;display:flex;gap:8px;align-items:center}
+  .searchbar input{flex:1;padding:10px 12px;border-radius:10px;border:1px solid rgba(0,0,0,0.08);outline:none}
+  .searchbar button{padding:10px 14px;border-radius:10px;border:none;background:var(--primary);color:white;cursor:pointer;font-weight:700}
+  .icons{display:flex;gap:10px;align-items:center}
+  .icon-btn{background:transparent;border:0;padding:8px 10px;border-radius:8px;cursor:pointer;color:var(--muted)}
+  .cart-bubble{background:var(--primary);color:white;padding:4px 8px;border-radius:999px;font-weight:700;font-size:13px}
 
-    .banner { width:100%; height:200px; background:url('https://source.unsplash.com/1200x400/?shopping') center/cover; display:flex; justify-content:center; align-items:center; color:white; font-size:28px; font-weight:bold; }
+  /* NAV CATEGORIES (horizontal scroll) */
+  .catbar{background:white;border-bottom:1px solid rgba(0,0,0,0.04);padding:10px 0}
+  .catbar .inner{max-width:var(--maxw);margin:0 auto;padding:0 12px;display:flex;gap:8px;overflow:auto;align-items:center}
+  .cat{flex:0 0 auto;padding:8px 12px;border-radius:999px;border:1px solid rgba(0,0,0,0.04);background:var(--glass);cursor:pointer;color:#0b6b4a;font-weight:700;white-space:nowrap}
+  .cat.active{background:linear-gradient(180deg,#eafaf0,#e2fae6);border-color:rgba(4,168,107,0.12)}
 
-    .controls { display:flex; justify-content:center; gap:10px; padding:15px; background:#fff; }
-    .controls select { padding:6px; }
+  /* HERO / BANNER */
+  .hero{max-width:var(--maxw);margin:18px auto;padding:0 12px;display:grid;grid-template-columns:1fr 320px;gap:16px;align-items:start}
+  .slider{height:220px;border-radius:12px;overflow:hidden;position:relative}
+  .slide{position:absolute;inset:0;background-size:cover;background-position:center;transition:opacity 450ms ease;opacity:0}
+  .slide.show{opacity:1}
+  .promo-cards{display:flex;flex-direction:column;gap:12px}
+  .promo{background:linear-gradient(180deg,#fff,#f6fffb);padding:14px;border-radius:10px;border:1px solid rgba(0,0,0,0.04)}
+  .promo h3{margin:0;color:var(--primary)}
 
-    .products { display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:15px; padding:15px; }
-    .product { background:white; border:1px solid #ddd; border-radius:8px; padding:10px; text-align:center; cursor:pointer; transition:.2s; }
-    .product:hover { box-shadow:0 2px 8px rgba(0,0,0,0.2); }
-    .product img { width:100%; height:140px; object-fit:cover; border-radius:5px; }
-    .product h4 { margin:8px 0 5px; font-size:15px; }
-    .product p { margin:0; color:#28a745; font-weight:bold; }
+  /* CONTROLS */
+  .controls{max-width:var(--maxw);margin:12px auto;padding:0 12px;display:flex;justify-content:space-between;gap:12px;align-items:center}
+  .filters{display:flex;gap:8px;align-items:center}
+  .filters select,.filters input{padding:8px;border-radius:8px;border:1px solid rgba(0,0,0,0.06)}
+  .sort{display:flex;gap:8px;align-items:center}
 
-    footer { background:#333; color:white; text-align:center; padding:20px; margin-top:20px; }
+  /* MAIN GRID */
+  .main{max-width:var(--maxw);margin:12px auto;padding:0 12px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px}
+  .card{background:var(--card);border-radius:12px;padding:12px;border:1px solid rgba(0,0,0,0.04);display:flex;flex-direction:column;gap:8px;cursor:pointer;transition:transform .12s,box-shadow .12s}
+  .card:hover{transform:translateY(-6px);box-shadow:0 12px 28px rgba(2,6,23,0.06)}
+  .media{height:160px;border-radius:10px;overflow:hidden;background:#efefef;display:grid;place-items:center}
+  .media img{width:100%;height:100%;object-fit:cover}
+  .meta{display:flex;justify-content:space-between;align-items:center;gap:8px}
+  .title{font-weight:700;font-size:14px;min-height:40px}
+  .price{color:var(--primary);font-weight:800}
 
-    #cart-modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,.6); justify-content:center; align-items:center; }
-    #cart-content { background:white; padding:20px; border-radius:8px; width:320px; max-height:80vh; overflow-y:auto; }
-    .btn { background:#28a745; color:white; padding:8px 12px; border:none; border-radius:5px; cursor:pointer; }
-    .btn:hover { background:#218838; }
-  </style>
+  /* badge rating / shop */
+  .shop{font-size:12px;color:var(--muted)}
+
+  /* CART DRAWER */
+  .cart-drawer{position:fixed;right:12px;top:84px;width:360px;max-width:92vw;background:var(--card);border-radius:12px;padding:12px;border:1px solid rgba(0,0,0,0.06);box-shadow:0 18px 48px rgba(2,6,23,0.08);z-index:120;display:none}
+  .cart-drawer.open{display:block}
+  .cart-item{display:flex;gap:8px;align-items:center;padding:10px;border-bottom:1px dashed rgba(0,0,0,0.04)}
+  .cart-item img{width:56px;height:56px;object-fit:cover;border-radius:8px}
+  .cart-footer{display:flex;justify-content:space-between;align-items:center;margin-top:12px}
+
+  /* PRODUCT PREVIEW MODAL */
+  .modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(2,6,23,0.5);z-index:200;padding:20px}
+  .modal.open{display:flex}
+  .modal-card{width:min(1000px,98vw);background:white;border-radius:12px;overflow:hidden;display:grid;grid-template-columns:460px 1fr}
+  .gallery{background:#000;display:flex;flex-direction:column;gap:10px;padding:12px}
+  .gallery-main{height:420px;border-radius:8px;overflow:hidden;display:grid;place-items:center;background:#111}
+  .gallery-main img{max-width:100%;max-height:100%;object-fit:contain}
+  .gallery-thumbs{display:flex;gap:8px;overflow:auto;padding-top:6px}
+  .thumb{width:72px;height:72px;border-radius:6px;overflow:hidden;border:2px solid transparent;cursor:pointer}
+  .thumb img{width:100%;height:100%;object-fit:cover}
+  .thumb.active{border-color:var(--primary)}
+
+  .detail{padding:18px;display:flex;flex-direction:column;gap:12px}
+  .detail h2{margin:0}
+  .rating{display:flex;gap:8px;align-items:center;color:#f59e0b;font-weight:700}
+  .detail .price{font-size:20px}
+  .qty{display:flex;gap:8px;align-items:center}
+  .qty button{padding:6px 10px;border-radius:8px;border:1px solid rgba(0,0,0,0.06);background:var(--glass);cursor:pointer}
+  .actions{display:flex;gap:10px}
+  .btn-primary{background:var(--primary);color:white;padding:10px 12px;border-radius:8px;border:none;cursor:pointer;font-weight:700}
+  .btn-ghost{background:transparent;border:1px solid rgba(0,0,0,0.08);padding:10px 12px;border-radius:8px;cursor:pointer}
+
+  /* responsive */
+  @media(max-width:1000px){
+    .hero{grid-template-columns:1fr}
+    .modal-card{grid-template-columns:1fr}
+    .gallery-main{height:320px}
+  }
+  @media(max-width:700px){
+    .searchbar input{width:100%}
+    .gallery-main{height:260px}
+    .media{height:120px}
+  }
+</style>
 </head>
 <body>
-  <header>
-    <div class="logo">
-      <img src="https://img.icons8.com/fluency/48/shopping-cart.png" alt="logo">
-      <h2>Fairuz Shop</h2>
+
+  <!-- TOPBAR -->
+  <header class="topbar" role="banner">
+    <div class="inner">
+      <div class="brand" aria-label="Fairuz Shop">
+        <div class="mark">F</div>
+        <div>
+          <h1>Fairuz Shop</h1>
+          <div style="font-size:12px;color:var(--muted)">Marketplace Prototype</div>
+        </div>
+      </div>
+
+      <div class="searchbar" role="search" aria-label="Pencarian produk">
+        <input id="searchInput" placeholder="Cari produk, brand, atau kategori..." aria-label="Cari produk">
+        <button id="btnSearch">Cari</button>
+      </div>
+
+      <div class="icons" aria-hidden="false">
+        <button class="icon-btn" id="btnProfile" title="Akun">👤</button>
+        <button class="icon-btn" id="btnWishlist" title="Wishlist">❤</button>
+        <button class="icon-btn" id="btnCartToggle" aria-haspopup="true" aria-expanded="false" title="Keranjang">🛒 <span class="cart-bubble" id="cartCount">0</span></button>
+      </div>
     </div>
-    <input type="text" id="search" placeholder="Cari produk terbaik...">
-    <div class="cart" onclick="openCart()">🛒 Keranjang (<span id="cart-count">0</span>)</div>
   </header>
 
-  <nav>
-    <a href="#" onclick="filterCat('all')">Semua</a>
-    <a href="#" onclick="filterCat('Elektronik')">Elektronik</a>
-    <a href="#" onclick="filterCat('Fashion')">Fashion</a>
-    <a href="#" onclick="filterCat('Rumah Tangga')">Rumah Tangga</a>
-    <a href="#" onclick="filterCat('Kesehatan')">Kesehatan</a>
-    <a href="#" onclick="filterCat('Olahraga')">Olahraga</a>
-    <a href="#" onclick="filterCat('Anak')">Anak</a>
-    <a href="#" onclick="filterCat('Makanan')">Makanan</a>
-  </nav>
-
-  <div class="banner">🎉 Promo Spesial di Fairuz Shop!</div>
-
-  <div class="controls">
-    <select id="sort">
-      <option value="asc">Harga Terendah</option>
-      <option value="desc">Harga Tertinggi</option>
-    </select>
-  </div>
-
-  <div class="products" id="product-list"></div>
-
-  <footer>
-    <p>Fairuz Shop © 2025 | Belanja Mudah, Aman, Terpercaya</p>
-  </footer>
-
-  <!-- Modal Keranjang -->
-  <div id="cart-modal">
-    <div id="cart-content">
-      <h3>Keranjang Belanja</h3>
-      <ul id="cart-items"></ul>
-      <p><strong>Total: Rp<span id="cart-total">0</span></strong></p>
-      <button class="btn" onclick="closeCart()">Tutup</button>
+  <!-- CATEGORIES -->
+  <div class="catbar" role="navigation" aria-label="Kategori">
+    <div class="inner" id="catBar">
+      <!-- categories inserted by JS -->
     </div>
   </div>
 
-  <script>
-    const products = [
-      {id:1,name:"Smartphone X",price:2500000,category:"Elektronik",img:"https://source.unsplash.com/200x200/?smartphone"},
-      {id:2,name:"Laptop Pro",price:7500000,category:"Elektronik",img:"https://source.unsplash.com/200x200/?laptop"},
-      {id:3,name:"Headphone",price:450000,category:"Elektronik",img:"https://source.unsplash.com/200x200/?headphone"},
-      {id:4,name:"Kaos Polos",price:75000,category:"Fashion",img:"https://source.unsplash.com/200x200/?tshirt"},
-      {id:5,name:"Jaket Denim",price:300000,category:"Fashion",img:"https://source.unsplash.com/200x200/?jacket"},
-      {id:6,name:"Sneakers",price:400000,category:"Fashion",img:"https://source.unsplash.com/200x200/?sneakers"},
-      {id:7,name:"Kursi Kayu",price:500000,category:"Rumah Tangga",img:"https://source.unsplash.com/200x200/?chair"},
-      {id:8,name:"Meja Belajar",price:650000,category:"Rumah Tangga",img:"https://source.unsplash.com/200x200/?table"},
-      {id:9,name:"Lampu Hias",price:120000,category:"Rumah Tangga",img:"https://source.unsplash.com/200x200/?lamp"},
-      {id:10,name:"Vitamin C",price:90000,category:"Kesehatan",img:"https://source.unsplash.com/200x200/?vitamin"},
-      {id:11,name:"Skincare",price:25000,category:"Kesehatan",img:"https://source.unsplash.com/200x200/?skincare"},
-      {id:12,name:"Parfum",price:150000,category:"Kesehatan",img:"https://source.unsplash.com/200x200/?perfume"},
-      {id:13,name:"Bola Sepak",price:200000,category:"Olahraga",img:"https://source.unsplash.com/200x200/?soccer"},
-      {id:14,name:"Raket Badminton",price:175000,category:"Olahraga",img:"https://source.unsplash.com/200x200/?badminton"},
-      {id:15,name:"Sepeda Gunung",price:1500000,category:"Olahraga",img:"https://source.unsplash.com/200x200/?bicycle"},
-      {id:16,name:"Mainan Lego",price:250000,category:"Anak",img:"https://source.unsplash.com/200x200/?lego"},
-      {id:17,name:"Boneka Teddy",price:100000,category:"Anak",img:"https://source.unsplash.com/200x200/?teddy"},
-      {id:18,name:"Kereta Mainan",price:150000,category:"Anak",img:"https://source.unsplash.com/200x200/?toy"},
-      {id:19,name:"Coklat Premium",price:60000,category:"Makanan",img:"https://source.unsplash.com/200x200/?chocolate"},
-      {id:20,name:"Kopi Arabica",price:85000,category:"Makanan",img:"https://source.unsplash.com/200x200/?coffee"},
-    ];
+  <!-- HERO / PROMO -->
+  <section class="hero" aria-label="Promo">
+    <div class="slider" id="slider">
+      <!-- slides -->
+    </div>
+    <aside class="promo-cards" aria-hidden="true">
+      <div class="promo">
+        <h3>Flash Sale Hari Ini</h3>
+        <p>Diskon hingga 70% untuk produk terpilih.</p>
+      </div>
+      <div class="promo">
+        <h3>Gratis Ongkir</h3>
+        <p>Untuk pembelian di atas Rp 200.000</p>
+      </div>
+    </aside>
+  </section>
 
-    let cart=[];
-    function renderProducts(list){
-      const container=document.getElementById("product-list");
-      container.innerHTML="";
-      list.forEach(p=>{
-        const div=document.createElement("div");
-        div.className="product";
-        div.innerHTML=`<img src="${p.img}" alt="${p.name}">
-                       <h4>${p.name}</h4>
-                       <p>Rp${p.price.toLocaleString()}</p>
-                       <button class="btn" onclick="addToCart(${p.id})">+ Keranjang</button>`;
-        container.appendChild(div);
-      });
+  <!-- CONTROLS -->
+  <div class="controls" role="region" aria-label="Filter dan sorting">
+    <div class="filters">
+      <select id="filterCategory">
+        <option value="all">Semua Kategori</option>
+      </select>
+      <input id="minPrice" type="number" placeholder="Min (Rp)">
+      <input id="maxPrice" type="number" placeholder="Max (Rp)">
+      <button id="applyFilter" class="btn-ghost">Terapkan</button>
+      <button id="resetFilter" class="btn-ghost">Reset</button>
+    </div>
+    <div class="sort">
+      Urutkan:
+      <select id="sortSelect">
+        <option value="relevance">Relevansi</option>
+        <option value="price-asc">Harga: Rendah ke Tinggi</option>
+        <option value="price-desc">Harga: Tinggi ke Rendah</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- PRODUCT GRID -->
+  <main class="main" role="main" aria-live="polite">
+    <div class="grid" id="productGrid" tabindex="0">
+      <!-- product cards inserted here -->
+    </div>
+  </main>
+
+  <!-- CART DRAWER -->
+  <aside class="cart-drawer" id="cartDrawer" role="region" aria-label="Keranjang belanja">
+    <h3>Keranjang</h3>
+    <div id="cartList"></div>
+    <div class="cart-footer">
+      <div><strong>Total:</strong> Rp <span id="cartTotal">0</span></div>
+      <div><button id="checkoutBtn" class="btn-primary">Checkout</button></div>
+    </div>
+  </aside>
+
+  <!-- PRODUCT PREVIEW MODAL -->
+  <div class="modal" id="modal" role="dialog" aria-modal="true" aria-hidden="true">
+    <div class="modal-card" role="document">
+      <div class="gallery">
+        <div class="gallery-main" id="galleryMain">
+          <!-- main image -->
+        </div>
+        <div class="gallery-thumbs" id="galleryThumbs" role="tablist">
+          <!-- thumbs -->
+        </div>
+      </div>
+      <div class="detail">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start">
+          <div>
+            <h2 id="pTitle"></h2>
+            <div class="shop" id="pShop">Fairuz Official Store</div>
+          </div>
+          <button id="closeModal" class="btn-ghost" aria-label="Tutup preview">✕</button>
+        </div>
+
+        <div class="rating" id="pRating">★★★★☆ <span style="color:var(--muted);font-weight:500;margin-left:8px">4.5 (120)</span></div>
+        <div class="price" id="pPrice">Rp 0</div>
+        <div id="pDesc" style="color:var(--muted);line-height:1.4"></div>
+
+        <div style="display:flex;gap:12px;align-items:center">
+          <div class="qty">
+            <button id="qtyDec" aria-label="Kurangi">−</button>
+            <input id="qtyInput" type="number" value="1" min="1" style="width:60px;padding:6px;border-radius:8px;border:1px solid rgba(0,0,0,0.06);text-align:center"/>
+            <button id="qtyInc" aria-label="Tambah">+</button>
+          </div>
+          <div style="margin-left:auto;display:flex;gap:8px">
+            <button id="addCartBtn" class="btn-primary">Tambah ke Keranjang</button>
+            <button id="buyBtn" class="btn-ghost">Beli Sekarang</button>
+          </div>
+        </div>
+
+        <div style="margin-top:12px;color:var(--muted);font-size:13px">
+          <strong>Detail Produk:</strong>
+          <div id="pDetail" style="margin-top:6px"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+/* ================= DATA ================= */
+const PRODUCTS = [
+  { id:101, title:"Smartphone Nova X", price:2799000, category:"Elektronik",
+    images:[
+      "https://source.unsplash.com/800x800/?smartphone,phone",
+      "https://source.unsplash.com/800x800/?smartphone,technology",
+      "https://source.unsplash.com/800x800/?mobile,device"
+    ],
+    rating:4.6, reviews:245, shop:"Nova Official", desc:"Ponsel canggih dengan kamera 48MP, RAM 8GB, baterai tahan lama.",
+    detail:"Layar 6.5\", 8GB RAM, 128GB storage, Android 13, fast charging."
+  },
+  { id:102, title:"Laptop UltraBook Pro", price:10999000, category:"Elektronik",
+    images:["https://source.unsplash.com/800x800/?laptop,notebook","https://source.unsplash.com/800x800/?laptop,keyboard"],
+    rating:4.7, reviews:98, shop:"Fairuz Tech", desc:"Laptop tipis, ringan, performa tinggi untuk kerja dan kreatif.",
+    detail:"Intel i7, 16GB RAM, 512GB SSD, layar 14\" 2K."
+  },
+  { id:103, title:"Headphone ANC Wireless", price:899000, category:"Elektronik",
+    images:["https://source.unsplash.com/800x800/?headphones,audio","https://source.unsplash.com/800x800/?headphones,wireless"],
+    rating:4.4, reviews:512, shop:"SoundCo", desc:"Noise cancelling, audio jernih, nyaman dipakai berjam-jam.",
+    detail:"ANC, bluetooth 5.2, 30 jam playtime."
+  },
+  { id:201, title:"Sneakers RunFast", price:459000, category:"Fashion",
+    images:["https://source.unsplash.com/800x800/?sneakers,shoes","https://source.unsplash.com/800x800/?running,shoes"],
+    rating:4.2, reviews:320, shop:"RunFast Store", desc:"Sepatu lari ringan untuk kenyamanan maksimal.",
+    detail:"Upper breathable, midsole cushioning, outsole with grip."
+  },
+  { id:202, title:"Jaket Denim Original", price:349000, category:"Fashion",
+    images:["https://source.unsplash.com/800x800/?denim,jacket","https://source.unsplash.com/800x800/?jeans,jacket"],
+    rating:4.5, reviews:180, shop:"DenimHouse", desc:"Jaket denim klasik yang tahan lama dan stylish.",
+    detail:"100% cotton, multiple pockets, machine washable."
+  },
+  { id:203, title:"Tas Ransel Travel", price:299000, category:"Fashion",
+    images:["https://source.unsplash.com/800x800/?backpack,bag","https://source.unsplash.com/800x800/?travel,backpack"],
+    rating:4.3, reviews:210, shop:"BagPack", desc:"Ransel travel dengan banyak kompartemen dan anti air.",
+    detail:"Capacity 25L, laptop sleeve, water-resistant material."
+  },
+  { id:301, title:"Meja Belajar Minimalis", price:899000, category:"Rumah Tangga",
+    images:["https://source.unsplash.com/800x800/?desk,table","https://source.unsplash.com/800x800/?study,desk"],
+    rating:4.6, reviews:105, shop:"HomeFit", desc:"Meja belajar modern, ringkas, cocok untuk ruang kecil.",
+    detail:"Material MDF, easy assembly, cable management."
+  },
+  { id:302, title:"Lampu Meja LED", price:129000, category:"Rumah Tangga",
+    images:["https://source.unsplash.com/800x800/?lamp,desk","https://source.unsplash.com/800x800/?lamp,light"],
+    rating:4.1, reviews:58, shop:"BrightHome", desc:"Lampu meja LED dengan intensitas cahaya yang bisa diatur.",
+    detail:"Dimmable, USB powered, warm/cool light modes."
+  },
+  { id:303, title:"Set Panci Stainless", price:399000, category:"Rumah Tangga",
+    images:["https://source.unsplash.com/800x800/?pan,kitchen","https://source.unsplash.com/800x800/?cookware"],
+    rating:4.4, reviews:143, shop:"KitchenPro", desc:"Panci berkualitas untuk dapur rumahan.",
+    detail:"Stainless steel, oven safe, even heat distribution."
+  },
+  { id:401, title:"Vitamin C 500mg", price:89000, category:"Kesehatan",
+    images:["https://source.unsplash.com/800x800/?vitamin,health","https://source.unsplash.com/800x800/?supplement"],
+    rating:4.8, reviews:720, shop:"HealthPlus", desc:"Suplemen Vitamin C untuk daya tahan tubuh.",
+    detail:"500mg per tablet, 60 tablets per bottle."
+  },
+  { id:402, title:"Paket Skincare Basic", price:249000, category:"Kesehatan",
+    images:["https://source.unsplash.com/800x800/?skincare,beauty","https://source.unsplash.com/800x800/?cosmetics"],
+    rating:4.2, reviews:420, shop:"GlowCare", desc:"Set perawatan kulit untuk pemula.",
+    detail:"Cleanser, toner, moisturizer, sunscreen sample."
+  },
+  { id:501, title:"Sepeda Gunung 26\"", price:3499000, category:"Olahraga",
+    images:["https://source.unsplash.com/800x800/?mountain,bike","https://source.unsplash.com/800x800/?bicycle,mountain"],
+    rating:4.5, reviews:89, shop:"CycleWorld", desc:"Sepeda gunung dengan rangka kuat dan suspensi depan.",
+    detail:"Frame steel, 21-speed, front suspension."
+  },
+  { id:502, title:"Matras Yoga", price:129000, category:"Olahraga",
+    images:["https://source.unsplash.com/800x800/?yoga,mat","https://source.unsplash.com/800x800/?fitness,yoga"],
+    rating:4.3, reviews:200, shop:"FlexFit", desc:"Matras anti slip nyaman untuk latihan di rumah.",
+    detail:"Thickness 6mm, non-toxic material."
+  },
+  { id:601, title:"Mainan Edukasi Anak", price:189000, category:"Anak",
+    images:["https://source.unsplash.com/800x800/?kids,toy","https://source.unsplash.com/800x800/?child,toys"],
+    rating:4.7, reviews:150, shop:"KidsWorld", desc:"Mainan edukatif untuk stimulasi kecerdasan anak.",
+    detail:"Age 3+, colorful blocks and puzzle."
+  },
+  { id:602, title:"Stroller Bayi Ringan", price:999000, category:"Anak",
+    images:["https://source.unsplash.com/800x800/?stroller,baby","https://source.unsplash.com/800x800/?baby,pram"],
+    rating:4.1, reviews:48, shop:"BabyCare", desc:"Stroller ringan, mudah dilipat dan dibawa travel.",
+    detail:"Compact fold, breathable fabric, safety harness."
+  },
+  { id:701, title:"Coklat Premium 250g", price:68000, category:"Makanan",
+    images:["https://source.unsplash.com/800x800/?chocolate,candy","https://source.unsplash.com/800x800/?chocolate,bar"],
+    rating:4.9, reviews:520, shop:"SweetBite", desc:"Coklat premium rasa kaya dan lembut.",
+    detail:"Dark chocolate, 70% cocoa."
+  },
+  { id:702, title:"Kopi Arabica Bubuk 250g", price:85000, category:"Makanan",
+    images:["https://source.unsplash.com/800x800/?coffee,beans","https://source.unsplash.com/800x800/?coffee,cup"],
+    rating:4.6, reviews:300, shop:"RoastHouse", desc:"Kopi Arabica single origin, aroma kuat dan nikmat.",
+    detail:"250g pack, medium roast."
+  }
+];
+
+/* ========== APP STATE ========== */
+let state = {
+  products: PRODUCTS.slice(),
+  activeCategory: 'all',
+  search: '',
+  minPrice: 0,
+  maxPrice: Infinity,
+  sort: 'relevance',
+  cart: JSON.parse(localStorage.getItem('fairuz_cart_v1') || '[]')
+};
+
+/* ========== UTILITIES ========== */
+const el = id => document.getElementById(id);
+const format = n => n.toLocaleString('id-ID');
+
+/* ========== RENDER CATEGORIES & SLIDER ========== */
+function renderCategories(){
+  const cats = ['all', ...Array.from(new Set(PRODUCTS.map(p=>p.category)))];
+  const catBar = document.getElementById('catBar');
+  const select = document.getElementById('filterCategory');
+  catBar.innerHTML = '';
+  select.innerHTML = '<option value="all">Semua Kategori</option>';
+  cats.forEach(c=>{
+    const label = c==='all' ? 'Semua' : c;
+    const btn = document.createElement('button');
+    btn.className = 'cat' + (c===state.activeCategory ? ' active' : '');
+    btn.textContent = label;
+    btn.onclick = ()=> { state.activeCategory = c; applyFilters(); highlightCats(); };
+    catBar.appendChild(btn);
+
+    // select option
+    if(c!=='all'){
+      const o = document.createElement('option'); o.value = c; o.textContent = c;
+      select.appendChild(o);
     }
+  });
+  highlightCats();
+}
+function highlightCats(){
+  Array.from(document.querySelectorAll('.cat')).forEach(b=>{
+    b.classList.toggle('active', b.textContent === (state.activeCategory==='all'?'Semua':state.activeCategory));
+  });
+}
 
-    function addToCart(id){
-      const prod=products.find(p=>p.id===id);
-      cart.push(prod);
-      document.getElementById("cart-count").textContent=cart.length;
-      updateCart();
-    }
+/* slider */
+const sliderImages = [
+  "https://source.unsplash.com/1200x400/?shopping,online",
+  "https://source.unsplash.com/1200x400/?sale,shopping",
+  "https://source.unsplash.com/1200x400/?discount,store"
+];
+function renderSlider(){
+  const slider = document.getElementById('slider');
+  slider.innerHTML = '';
+  sliderImages.forEach((src,i)=>{
+    const s = document.createElement('div');
+    s.className = 'slide' + (i===0 ? ' show' : '');
+    s.style.backgroundImage = `url(${src})`;
+    slider.appendChild(s);
+  });
+  let idx = 0;
+  setInterval(()=> {
+    const slides = slider.querySelectorAll('.slide');
+    slides.forEach((sl,si)=> sl.classList.toggle('show', si===((idx+1)%slides.length)));
+    idx = (idx+1)%slides.length;
+  }, 4500);
+}
 
-    function updateCart(){
-      const items=document.getElementById("cart-items");
-      const total=document.getElementById("cart-total");
-      items.innerHTML="";
-      let sum=0;
-      cart.forEach(c=>{
-        const li=document.createElement("li");
-        li.textContent=`${c.name} - Rp${c.price.toLocaleString()}`;
-        items.appendChild(li);
-        sum+=c.price;
-      });
-      total.textContent=sum.toLocaleString();
-    }
+/* ========== RENDER PRODUCTS GRID ========== */
+function renderGrid(){
+  const grid = document.getElementById('productGrid');
+  grid.innerHTML = '';
+  let list = state.products.slice();
 
-    function openCart(){ document.getElementById("cart-modal").style.display="flex"; }
-    function closeCart(){ document.getElementById("cart-modal").style.display="none"; }
+  // search
+  if(state.search) {
+    const q = state.search.toLowerCase();
+    list = list.filter(p => (p.title + ' ' + p.desc + ' ' + p.detail + ' ' + p.shop).toLowerCase().includes(q));
+  }
+  // category
+  if(state.activeCategory !== 'all') list = list.filter(p=>p.category === state.activeCategory);
+  // price filter
+  list = list.filter(p=>p.price >= (state.minPrice || 0) && p.price <= (isFinite(state.maxPrice)?state.maxPrice:Infinity));
 
-    function filterCat(cat){
-      if(cat==="all") renderProducts(products);
-      else renderProducts(products.filter(p=>p.category===cat));
-    }
+  // sort
+  if(state.sort === 'price-asc') list.sort((a,b)=>a.price-b.price);
+  else if(state.sort === 'price-desc') list.sort((a,b)=>b.price-a.price);
+  else if(state.sort === 'relevance') list.sort((a,b)=>b.rating - a.rating);
 
-    document.getElementById("search").oninput=function(){
-      const q=this.value.toLowerCase();
-      renderProducts(products.filter(p=>p.name.toLowerCase().includes(q)));
-    };
+  // render
+  for(const p of list){
+    const card = document.createElement('article');
+    card.className = 'card';
+    card.setAttribute('tabindex', '0');
+    card.innerHTML = `
+      <div class="media"><img src="${p.images[0]}" alt="${p.title}"></div>
+      <div class="title">${p.title}</div>
+      <div class="meta"><div class="shop">${p.shop}</div><div class="price">Rp ${format(p.price)}</div></div>
+      <div style="display:flex;gap:8px;margin-top:8px">
+        <button class="btn-primary" data-id="${p.id}">Tambah</button>
+        <button class="btn-ghost preview" data-id="${p.id}">Preview</button>
+      </div>
+    `;
+    // events
+    card.querySelector('.btn-primary').addEventListener('click', (e)=>{ e.stopPropagation(); addToCartById(p.id); });
+    card.querySelector('.preview').addEventListener('click', (e)=>{ e.stopPropagation(); openPreview(p.id); });
+    card.addEventListener('click', ()=> openPreview(p.id));
+    grid.appendChild(card);
+  }
+}
 
-    document.getElementById("sort").onchange=function(){
-      const val=this.value;
-      const list=[...products].sort((a,b)=>val==="asc"?a.price-b.price:b.price-a.price);
-      renderProducts(list);
-    };
+/* ========== FILTERS / UI HOOKS ========== */
+document.getElementById('searchInput').addEventListener('input', (e)=> {
+  state.search = e.target.value;
+  applyFilters();
+});
+document.getElementById('applyFilter').addEventListener('click', ()=> {
+  state.minPrice = Number(document.getElementById('minPrice').value) || 0;
+  const max = Number(document.getElementById('maxPrice').value);
+  state.maxPrice = max>0 ? max : Infinity;
+  applyFilters();
+});
+document.getElementById('resetFilter').addEventListener('click', ()=> {
+  document.getElementById('minPrice').value = '';
+  document.getElementById('maxPrice').value = '';
+  state.minPrice = 0; state.maxPrice = Infinity; state.activeCategory = 'all';
+  document.getElementById('filterCategory').value = 'all';
+  applyFilters();
+  highlightCats();
+});
+document.getElementById('filterCategory').addEventListener('change', (e)=> { state.activeCategory = e.target.value; applyFilters(); highlightCats(); });
+document.getElementById('sortSelect').addEventListener('change', (e)=> { const v = e.target.value; if(v==='price-asc') state.sort='price-asc'; else if(v==='price-desc') state.sort='price-desc'; else state.sort='relevance'; applyFilters(); });
 
-    renderProducts(products);
-  </script>
+function applyFilters(){
+  renderGrid();
+}
+
+/* ========== CART LOGIC ========== */
+function saveCart(){
+  localStorage.setItem('fairuz_cart_v1', JSON.stringify(state.cart));
+}
+function loadCart(){
+  state.cart = JSON.parse(localStorage.getItem('fairuz_cart_v1') || '[]');
+}
+function addToCartById(id, qty=1){
+  const p = PRODUCTS.find(x=>x.id===id); if(!p) return;
+  const existing = state.cart.find(ci=>ci.id===id);
+  if(existing) existing.qty += qty; else state.cart.push({ id:p.id, title:p.title, price:p.price, img:p.images[0], qty });
+  saveCart(); renderCart(); showCart();
+}
+function renderCart(){
+  const list = document.getElementById('cartList');
+  list.innerHTML = '';
+  let total = 0;
+  for(const it of state.cart){
+    const li = document.createElement('div');
+    li.className = 'cart-item';
+    const img = document.createElement('img'); img.src = it.img;
+    const info = document.createElement('div'); info.style.flex = '1';
+    info.innerHTML = `<div style="font-weight:700">${it.title}</div><div style="color:var(--muted)">Rp ${format(it.price)} x ${it.qty}</div>`;
+    const rem = document.createElement('div');
+    rem.innerHTML = `<button class="btn-ghost" data-id="${it.id}">Hapus</button>`;
+    rem.querySelector('button').addEventListener('click', ()=>{ removeCartItem(it.id); });
+    li.appendChild(img); li.appendChild(info); li.appendChild(rem);
+    list.appendChild(li);
+    total += it.price * it.qty;
+  }
+  el('cartTotal').textContent = format(total);
+  el('cartCount').textContent = state.cart.reduce((s,i)=>s+i.qty,0);
+}
+function removeCartItem(id){
+  state.cart = state.cart.filter(c=>c.id!==id); saveCart(); renderCart();
+}
+document.getElementById('btnCartToggle').addEventListener('click', ()=> { showCart(); });
+
+function showCart(){ document.getElementById('cartDrawer').classList.add('open'); }
+function hideCart(){ document.getElementById('cartDrawer').classList.remove('open'); }
+
+/* Checkout mock */
+document.getElementById('checkoutBtn').addEventListener('click', ()=>{
+  if(state.cart.length===0){ alert('Keranjang kosong'); return; }
+  const name = prompt('Nama penerima'); if(!name) return;
+  const addr = prompt('Alamat pengiriman'); if(!addr) return;
+  alert('Pesanan dibuat (mock). Terima kasih, ' + name);
+  state.cart = []; saveCart(); renderCart(); hideCart();
+});
+
+/* ========== PRODUCT PREVIEW (modal with gallery) ========== */
+const modal = el('modal');
+const galleryMain = el('galleryMain');
+const galleryThumbs = el('galleryThumbs');
+let currentPreview = { product:null, idx:0 };
+
+function openPreview(id){
+  const p = PRODUCTS.find(x=>x.id===id); if(!p) return;
+  currentPreview.product = p;
+  currentPreview.idx = 0;
+  renderPreview();
+  modal.classList.add('open'); modal.setAttribute('aria-hidden','false');
+  document.body.style.overflow = 'hidden';
+}
+function closePreview(){
+  modal.classList.remove('open'); modal.setAttribute('aria-hidden','true');
+  document.body.style.overflow = '';
+  currentPreview.product = null; currentPreview.idx = 0;
+}
+el('closeModal').addEventListener('click', closePreview);
+modal.addEventListener('click', (e)=>{ if(e.target === modal) closePreview(); });
+
+function renderPreview(){
+  const p = currentPreview.product; if(!p) return;
+  // main image
+  galleryMain.innerHTML = '';
+  const img = document.createElement('img'); img.src = p.images[currentPreview.idx] + '&' + Date.now(); // cache bust for variety
+  img.alt = p.title;
+  galleryMain.appendChild(img);
+
+  // thumbs
+  galleryThumbs.innerHTML = '';
+  p.images.forEach((src,i)=>{
+    const t = document.createElement('div'); t.className = 'thumb' + (i===currentPreview.idx ? ' active' : '');
+    t.innerHTML = `<img src="${src}">`;
+    t.addEventListener('click', ()=>{ currentPreview.idx = i; renderPreview(); });
+    galleryThumbs.appendChild(t);
+  });
+
+  // details
+  el('pTitle').textContent = p.title;
+  el('pShop').textContent = p.shop;
+  el('pRating').innerHTML = '★'.repeat(Math.round(p.rating)) + '☆ <span style="color:var(--muted);font-weight:500;margin-left:8px">' + p.rating.toFixed(1) + ' ('+p.reviews+')</span>';
+  el('pPrice').textContent = 'Rp ' + format(p.price);
+  el('pDesc').textContent = p.desc;
+  el('pDetail').textContent = p.detail;
+  el('qtyInput').value = 1;
+}
+
+/* gallery keyboard navigation */
+document.addEventListener('keydown', (e)=>{
+  if(!currentPreview.product) return;
+  if(e.key === 'Escape') closePreview();
+  if(e.key === 'ArrowRight'){ currentPreview.idx = (currentPreview.idx + 1) % currentPreview.product.images.length; renderPreview(); }
+  if(e.key === 'ArrowLeft'){ currentPreview.idx = (currentPreview.idx - 1 + currentPreview.product.images.length) % currentPreview.product.images.length; renderPreview(); }
+});
+
+/* qty controls */
+el('qtyInc').addEventListener('click', ()=>{ el('qtyInput').value = Number(el('qtyInput').value) + 1; });
+el('qtyDec').addEventListener('click', ()=>{ el('qtyInput').value = Math.max(1, Number(el('qtyInput').value) - 1); });
+
+/* add to cart from modal */
+el('addCartBtn').addEventListener('click', ()=>{
+  const p = currentPreview.product; if(!p) return;
+  const q = Math.max(1, Number(el('qtyInput').value) || 1);
+  const existing = state.cart.find(c=>c.id===p.id);
+  if(existing) existing.qty += q; else state.cart.push({ id:p.id, title:p.title, price:p.price, img:p.images[0], qty:q });
+  saveCart(); renderCart(); closePreview(); showCart();
+});
+el('buyBtn').addEventListener('click', ()=>{
+  const p = currentPreview.product; if(!p) return;
+  const q = Math.max(1, Number(el('qtyInput').value) || 1);
+  // quick buy mock
+  alert('Beli cepat: ' + p.title + ' x' + q + ' (mock)');
+  closePreview();
+});
+
+/* ========== INITIALIZE APP ========== */
+function init(){
+  renderCategories();
+  renderSlider();
+  renderGrid();
+  loadCart();
+  renderCart();
+  // attach search button
+  el('btnSearch').addEventListener('click', ()=> { state.search = el('searchInput').value; applyFilters(); });
+  // preload images for smoother preview (optional)
+  PRODUCTS.forEach(p => p.images.forEach(src => { const i=new Image(); i.src = src; }));
+}
+init();
+
+/* small accessibility: focus grid for keyboard */
+document.getElementById('productGrid').addEventListener('keydown', (e)=>{
+  if(e.key === 'Enter' && document.activeElement && document.activeElement.classList.contains('card')){
+    const idx = Array.from(document.querySelectorAll('.card')).indexOf(document.activeElement);
+    const pid = state.products[idx] ? state.products[idx].id : null;
+    if(pid) openPreview(pid);
+  }
+});
+</script>
 </body>
 </html>
