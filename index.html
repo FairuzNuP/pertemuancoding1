@@ -5,43 +5,61 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Fairuz Shop</title>
   <style>
-    body { font-family: Arial, sans-serif; margin:0; padding:0; background:#f4f4f4; }
-    header { background:#28a745; color:white; padding:15px; display:flex; justify-content:space-between; align-items:center; }
-    header h1 { margin:0; display:flex; align-items:center; gap:10px; }
-    header h1 img { width:35px; height:35px; }
-    .controls { display:flex; flex-wrap:wrap; gap:10px; padding:15px; background:#fff; }
-    .controls input, .controls select { padding:8px; }
-    .products { display:grid; grid-template-columns:repeat(auto-fill, minmax(200px,1fr)); gap:15px; padding:15px; }
-    .product { background:white; border:1px solid #ccc; border-radius:8px; padding:10px; text-align:center; cursor:pointer; transition:.2s; }
-    .product:hover { box-shadow:0 2px 6px rgba(0,0,0,0.2); }
-    .product img { width:100%; height:150px; object-fit:cover; border-radius:5px; }
-    #cart { position:fixed; top:20px; right:20px; background:white; border:1px solid #ccc; padding:10px; border-radius:8px; width:220px; max-height:70vh; overflow-y:auto; }
-    #cart h3 { margin-top:0; }
-    .modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); justify-content:center; align-items:center; }
-    .modal-content { background:white; padding:20px; border-radius:8px; width:300px; text-align:center; }
-    .modal-content img { width:100%; height:200px; object-fit:cover; border-radius:5px; }
-    .btn { padding:8px 12px; background:#28a745; color:white; border:none; border-radius:5px; cursor:pointer; }
+    body { font-family: Arial, sans-serif; margin:0; padding:0; background:#f8f8f8; }
+    header { background:#28a745; padding:10px 20px; color:white; display:flex; align-items:center; justify-content:space-between; }
+    header .logo { display:flex; align-items:center; gap:8px; }
+    header .logo img { width:32px; height:32px; }
+    header input { width:50%; padding:8px; border:none; border-radius:5px; }
+    header .cart { cursor:pointer; font-weight:bold; }
+
+    nav { background:#fff; padding:10px; display:flex; justify-content:center; gap:20px; border-bottom:1px solid #ddd; }
+    nav a { text-decoration:none; color:#333; font-weight:bold; }
+    nav a:hover { color:#28a745; }
+
+    .banner { width:100%; height:200px; background:url('https://source.unsplash.com/1200x400/?shopping') center/cover; display:flex; justify-content:center; align-items:center; color:white; font-size:28px; font-weight:bold; }
+
+    .controls { display:flex; justify-content:center; gap:10px; padding:15px; background:#fff; }
+    .controls select { padding:6px; }
+
+    .products { display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:15px; padding:15px; }
+    .product { background:white; border:1px solid #ddd; border-radius:8px; padding:10px; text-align:center; cursor:pointer; transition:.2s; }
+    .product:hover { box-shadow:0 2px 8px rgba(0,0,0,0.2); }
+    .product img { width:100%; height:140px; object-fit:cover; border-radius:5px; }
+    .product h4 { margin:8px 0 5px; font-size:15px; }
+    .product p { margin:0; color:#28a745; font-weight:bold; }
+
+    footer { background:#333; color:white; text-align:center; padding:20px; margin-top:20px; }
+
+    #cart-modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,.6); justify-content:center; align-items:center; }
+    #cart-content { background:white; padding:20px; border-radius:8px; width:320px; max-height:80vh; overflow-y:auto; }
+    .btn { background:#28a745; color:white; padding:8px 12px; border:none; border-radius:5px; cursor:pointer; }
     .btn:hover { background:#218838; }
   </style>
 </head>
 <body>
   <header>
-    <h1><img src="https://img.icons8.com/fluency/48/shopping-cart.png" alt="logo"/> Fairuz Shop</h1>
-    <div><strong>Belanja Mudah & Aman</strong></div>
+    <div class="logo">
+      <img src="https://img.icons8.com/fluency/48/shopping-cart.png" alt="logo">
+      <h2>Fairuz Shop</h2>
+    </div>
+    <input type="text" id="search" placeholder="Cari produk terbaik...">
+    <div class="cart" onclick="openCart()">🛒 Keranjang (<span id="cart-count">0</span>)</div>
   </header>
 
+  <nav>
+    <a href="#" onclick="filterCat('all')">Semua</a>
+    <a href="#" onclick="filterCat('Elektronik')">Elektronik</a>
+    <a href="#" onclick="filterCat('Fashion')">Fashion</a>
+    <a href="#" onclick="filterCat('Rumah Tangga')">Rumah Tangga</a>
+    <a href="#" onclick="filterCat('Kesehatan')">Kesehatan</a>
+    <a href="#" onclick="filterCat('Olahraga')">Olahraga</a>
+    <a href="#" onclick="filterCat('Anak')">Anak</a>
+    <a href="#" onclick="filterCat('Makanan')">Makanan</a>
+  </nav>
+
+  <div class="banner">🎉 Promo Spesial di Fairuz Shop!</div>
+
   <div class="controls">
-    <input type="text" id="search" placeholder="Cari produk...">
-    <select id="category">
-      <option value="all">Semua Kategori</option>
-      <option value="Elektronik">Elektronik</option>
-      <option value="Fashion">Fashion</option>
-      <option value="Rumah Tangga">Rumah Tangga</option>
-      <option value="Kesehatan">Kesehatan & Kecantikan</option>
-      <option value="Olahraga">Olahraga & Hobi</option>
-      <option value="Anak">Anak & Bayi</option>
-      <option value="Makanan">Makanan & Minuman</option>
-    </select>
     <select id="sort">
       <option value="asc">Harga Terendah</option>
       <option value="desc">Harga Tertinggi</option>
@@ -50,52 +68,45 @@
 
   <div class="products" id="product-list"></div>
 
-  <div id="cart">
-    <h3>Keranjang</h3>
-    <ul id="cart-items"></ul>
-    <p><strong>Total: Rp<span id="cart-total">0</span></strong></p>
-  </div>
+  <footer>
+    <p>Fairuz Shop © 2025 | Belanja Mudah, Aman, Terpercaya</p>
+  </footer>
 
-  <!-- Modal Produk -->
-  <div class="modal" id="modal">
-    <div class="modal-content">
-      <h2 id="modal-title"></h2>
-      <img id="modal-img" src="" alt="">
-      <p id="modal-price"></p>
-      <p id="modal-cat"></p>
-      <button class="btn" id="add-to-cart">Tambah ke Keranjang</button>
-      <button class="btn" onclick="closeModal()" style="background:#dc3545;">Tutup</button>
+  <!-- Modal Keranjang -->
+  <div id="cart-modal">
+    <div id="cart-content">
+      <h3>Keranjang Belanja</h3>
+      <ul id="cart-items"></ul>
+      <p><strong>Total: Rp<span id="cart-total">0</span></strong></p>
+      <button class="btn" onclick="closeCart()">Tutup</button>
     </div>
   </div>
 
   <script>
     const products = [
-      {id:1,name:"Smartphone X",price:2500000,category:"Elektronik",img:"https://source.unsplash.com/300x300/?smartphone"},
-      {id:2,name:"Laptop Pro",price:7500000,category:"Elektronik",img:"https://source.unsplash.com/300x300/?laptop"},
-      {id:3,name:"Headphone",price:450000,category:"Elektronik",img:"https://source.unsplash.com/300x300/?headphone"},
-      {id:4,name:"Kaos Polos",price:75000,category:"Fashion",img:"https://source.unsplash.com/300x300/?tshirt"},
-      {id:5,name:"Jaket Denim",price:300000,category:"Fashion",img:"https://source.unsplash.com/300x300/?jacket"},
-      {id:6,name:"Sepatu Sneakers",price:400000,category:"Fashion",img:"https://source.unsplash.com/300x300/?sneakers"},
-      {id:7,name:"Kursi Kayu",price:500000,category:"Rumah Tangga",img:"https://source.unsplash.com/300x300/?chair"},
-      {id:8,name:"Meja Belajar",price:650000,category:"Rumah Tangga",img:"https://source.unsplash.com/300x300/?table"},
-      {id:9,name:"Lampu Hias",price:120000,category:"Rumah Tangga",img:"https://source.unsplash.com/300x300/?lamp"},
-      {id:10,name:"Vitamin C",price:90000,category:"Kesehatan",img:"https://source.unsplash.com/300x300/?vitamin"},
-      {id:11,name:"Masker Wajah",price:25000,category:"Kesehatan",img:"https://source.unsplash.com/300x300/?skincare"},
-      {id:12,name:"Parfum",price:150000,category:"Kesehatan",img:"https://source.unsplash.com/300x300/?perfume"},
-      {id:13,name:"Bola Sepak",price:200000,category:"Olahraga",img:"https://source.unsplash.com/300x300/?soccer"},
-      {id:14,name:"Raket Badminton",price:175000,category:"Olahraga",img:"https://source.unsplash.com/300x300/?badminton"},
-      {id:15,name:"Sepeda Gunung",price:1500000,category:"Olahraga",img:"https://source.unsplash.com/300x300/?bicycle"},
-      {id:16,name:"Mainan Lego",price:250000,category:"Anak",img:"https://source.unsplash.com/300x300/?lego"},
-      {id:17,name:"Boneka Teddy",price:100000,category:"Anak",img:"https://source.unsplash.com/300x300/?teddy"},
-      {id:18,name:"Kereta Mainan",price:150000,category:"Anak",img:"https://source.unsplash.com/300x300/?toy"},
-      {id:19,name:"Coklat Premium",price:60000,category:"Makanan",img:"https://source.unsplash.com/300x300/?chocolate"},
-      {id:20,name:"Kopi Arabica",price:85000,category:"Makanan",img:"https://source.unsplash.com/300x300/?coffee"},
-      {id:21,name:"Snack Ring",price:15000,category:"Makanan",img:"https://source.unsplash.com/300x300/?snack"},
+      {id:1,name:"Smartphone X",price:2500000,category:"Elektronik",img:"https://source.unsplash.com/200x200/?smartphone"},
+      {id:2,name:"Laptop Pro",price:7500000,category:"Elektronik",img:"https://source.unsplash.com/200x200/?laptop"},
+      {id:3,name:"Headphone",price:450000,category:"Elektronik",img:"https://source.unsplash.com/200x200/?headphone"},
+      {id:4,name:"Kaos Polos",price:75000,category:"Fashion",img:"https://source.unsplash.com/200x200/?tshirt"},
+      {id:5,name:"Jaket Denim",price:300000,category:"Fashion",img:"https://source.unsplash.com/200x200/?jacket"},
+      {id:6,name:"Sneakers",price:400000,category:"Fashion",img:"https://source.unsplash.com/200x200/?sneakers"},
+      {id:7,name:"Kursi Kayu",price:500000,category:"Rumah Tangga",img:"https://source.unsplash.com/200x200/?chair"},
+      {id:8,name:"Meja Belajar",price:650000,category:"Rumah Tangga",img:"https://source.unsplash.com/200x200/?table"},
+      {id:9,name:"Lampu Hias",price:120000,category:"Rumah Tangga",img:"https://source.unsplash.com/200x200/?lamp"},
+      {id:10,name:"Vitamin C",price:90000,category:"Kesehatan",img:"https://source.unsplash.com/200x200/?vitamin"},
+      {id:11,name:"Skincare",price:25000,category:"Kesehatan",img:"https://source.unsplash.com/200x200/?skincare"},
+      {id:12,name:"Parfum",price:150000,category:"Kesehatan",img:"https://source.unsplash.com/200x200/?perfume"},
+      {id:13,name:"Bola Sepak",price:200000,category:"Olahraga",img:"https://source.unsplash.com/200x200/?soccer"},
+      {id:14,name:"Raket Badminton",price:175000,category:"Olahraga",img:"https://source.unsplash.com/200x200/?badminton"},
+      {id:15,name:"Sepeda Gunung",price:1500000,category:"Olahraga",img:"https://source.unsplash.com/200x200/?bicycle"},
+      {id:16,name:"Mainan Lego",price:250000,category:"Anak",img:"https://source.unsplash.com/200x200/?lego"},
+      {id:17,name:"Boneka Teddy",price:100000,category:"Anak",img:"https://source.unsplash.com/200x200/?teddy"},
+      {id:18,name:"Kereta Mainan",price:150000,category:"Anak",img:"https://source.unsplash.com/200x200/?toy"},
+      {id:19,name:"Coklat Premium",price:60000,category:"Makanan",img:"https://source.unsplash.com/200x200/?chocolate"},
+      {id:20,name:"Kopi Arabica",price:85000,category:"Makanan",img:"https://source.unsplash.com/200x200/?coffee"},
     ];
 
-    let cart = [];
-    let selectedProduct = null;
-
+    let cart=[];
     function renderProducts(list){
       const container=document.getElementById("product-list");
       container.innerHTML="";
@@ -104,25 +115,18 @@
         div.className="product";
         div.innerHTML=`<img src="${p.img}" alt="${p.name}">
                        <h4>${p.name}</h4>
-                       <p>Rp${p.price.toLocaleString()}</p>`;
-        div.onclick=()=>openModal(p);
+                       <p>Rp${p.price.toLocaleString()}</p>
+                       <button class="btn" onclick="addToCart(${p.id})">+ Keranjang</button>`;
         container.appendChild(div);
       });
     }
 
-    function openModal(product){
-      selectedProduct=product;
-      document.getElementById("modal-title").textContent=product.name;
-      document.getElementById("modal-img").src=product.img;
-      document.getElementById("modal-price").textContent="Harga: Rp"+product.price.toLocaleString();
-      document.getElementById("modal-cat").textContent="Kategori: "+product.category;
-      document.getElementById("modal").style.display="flex";
+    function addToCart(id){
+      const prod=products.find(p=>p.id===id);
+      cart.push(prod);
+      document.getElementById("cart-count").textContent=cart.length;
+      updateCart();
     }
-    function closeModal(){ document.getElementById("modal").style.display="none"; }
-
-    document.getElementById("add-to-cart").onclick=()=>{
-      if(selectedProduct){ cart.push(selectedProduct); updateCart(); closeModal(); }
-    };
 
     function updateCart(){
       const items=document.getElementById("cart-items");
@@ -138,19 +142,24 @@
       total.textContent=sum.toLocaleString();
     }
 
-    // Search, filter, sort
-    function filterProducts(){
-      const search=document.getElementById("search").value.toLowerCase();
-      const cat=document.getElementById("category").value;
-      const sort=document.getElementById("sort").value;
-      let list=products.filter(p=>p.name.toLowerCase().includes(search));
-      if(cat!=="all") list=list.filter(p=>p.category===cat);
-      list.sort((a,b)=>sort==="asc"?a.price-b.price:b.price-a.price);
-      renderProducts(list);
+    function openCart(){ document.getElementById("cart-modal").style.display="flex"; }
+    function closeCart(){ document.getElementById("cart-modal").style.display="none"; }
+
+    function filterCat(cat){
+      if(cat==="all") renderProducts(products);
+      else renderProducts(products.filter(p=>p.category===cat));
     }
-    document.getElementById("search").oninput=filterProducts;
-    document.getElementById("category").onchange=filterProducts;
-    document.getElementById("sort").onchange=filterProducts;
+
+    document.getElementById("search").oninput=function(){
+      const q=this.value.toLowerCase();
+      renderProducts(products.filter(p=>p.name.toLowerCase().includes(q)));
+    };
+
+    document.getElementById("sort").onchange=function(){
+      const val=this.value;
+      const list=[...products].sort((a,b)=>val==="asc"?a.price-b.price:b.price-a.price);
+      renderProducts(list);
+    };
 
     renderProducts(products);
   </script>
