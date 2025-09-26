@@ -4,7 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>Fairuz Shop — Marketplace (Tokopedia-inspired)</title>
-<meta name="description" content="Fairuz Shop — demo marketplace with categories, banner slider, product preview gallery, filters and cart (localStorage). Images from Unsplash by category."/>
+<meta name="description" content="Fairuz Shop — demo marketplace with categories, banner slider, product preview gallery, filters and cart (localStorage). Images from Unsplash by product."/>
 <style>
   :root{
     --bg:#f3f6f8; --card:#fff; --muted:#6b7280;
@@ -257,82 +257,116 @@
   </footer>
 
 <script>
-/* ===== DATA (products with category-specific Unsplash images) ===== */
+/* ===== DATA (hardcoded Unsplash images matching product) ===== */
 const PRODUCTS = [
   { id:101, title:"Smartphone Nova X", price:2799000, category:"Elektronik",
     images:[
-      "https://source.unsplash.com/800x800/?smartphone,phone&sig=101",
-      "https://source.unsplash.com/800x800/?mobile,device&sig=102",
-      "https://source.unsplash.com/800x800/?phone,camera&sig=103"
+      "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?q=80&w=1200&auto=format&fit=crop&ixlib=rb-4.0.3&s=5e354e5c9b1a9db6466b740249bca7d5",
+      "https://images.unsplash.com/photo-1510557880182-3d4d3cf3e5e3?q=80&w=1200&auto=format&fit=crop&ixlib=rb-4.0.3&s=1a8b5c2b0f1b3a2e7a4d2e1f83b9d2c1",
+      "https://images.unsplash.com/photo-1512496015851-a90fb38ba796?q=80&w=1200&auto=format&fit=crop&ixlib=rb-4.0.3&s=aa6b3f6b9a4aee3b2f7d8b6d16c3f2c7"
     ], rating:4.6, reviews:245, shop:"Nova Official", desc:"Ponsel canggih dengan kamera 48MP, RAM 8GB.", detail:"Layar 6.5\", 8GB RAM, 128GB storage, fast charging.", variants:{colors:["Hitam","Putih","Biru"], sizes:["64GB","128GB"]}, stock:25
   },
   { id:102, title:"Laptop UltraBook Pro", price:10999000, category:"Elektronik",
-    images:["https://source.unsplash.com/800x800/?laptop,notebook&sig=104","https://source.unsplash.com/800x800/?notebook,computer&sig=105"],
-    rating:4.7, reviews:98, shop:"Fairuz Tech", desc:"Laptop tipis untuk kerja & kreasi.", detail:"Intel i7, 16GB RAM, 512GB SSD.", variants:{colors:["Silver"],sizes:["16GB/512GB"]}, stock:8
+    images:[
+      "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?q=80&w=1200&auto=format&fit=crop&ixlib=rb-4.0.3&s=4c2d3fbe5b7b5d3b1c6b8ef1d2c3e6b7",
+      "https://images.unsplash.com/photo-1498050108023-c5249f4df085?q=80&w=1200&auto=format&fit=crop&ixlib=rb-4.0.3&s=3a1f4e2b6d5c7f9b8a2b3c4d5e6f7a8b"
+    ], rating:4.7, reviews:98, shop:"Fairuz Tech", desc:"Laptop tipis untuk kerja & kreasi.", detail:"Intel i7, 16GB RAM, 512GB SSD.", variants:{colors:["Silver"],sizes:["16GB/512GB"]}, stock:8
   },
   { id:103, title:"Headphone ANC Wireless", price:899000, category:"Elektronik",
-    images:["https://source.unsplash.com/800x800/?headphones,audio&sig=106","https://source.unsplash.com/800x800/?headphone,wireless&sig=107"],
-    rating:4.4, reviews:512, shop:"SoundCo", desc:"Noise cancelling, audio jernih.", detail:"ANC, bluetooth 5.2, 30 jam playtime.", variants:{colors:["Hitam","Abu"],sizes:[]}, stock:40
+    images:[
+      "https://images.unsplash.com/photo-1518441902118-2e7f8d2cfb52?q=80&w=1200&auto=format&fit=crop&ixlib=rb-4.0.3&s=b5c1d6e4f7a8b9c0d1e2f3a4b5c6d7e8",
+      "https://images.unsplash.com/photo-1518441902118-2e7f8d2cfb52?q=80&w=1200&auto=format&fit=crop&ixlib=rb-4.0.3&s=b5c1d6e4f7a8b9c0d1e2f3a4b5c6d7e8"
+    ], rating:4.4, reviews:512, shop:"SoundCo", desc:"Noise cancelling, audio jernih.", detail:"ANC, bluetooth 5.2, 30 jam playtime.", variants:{colors:["Hitam","Abu"],sizes:[]}, stock:40
   },
   { id:201, title:"Sneakers RunFast", price:459000, category:"Fashion",
-    images:["https://source.unsplash.com/800x800/?sneakers,shoe&sig=201","https://source.unsplash.com/800x800/?running,shoe&sig=202"],
-    rating:4.2, reviews:320, shop:"RunFast Store", desc:"Sepatu lari ringan.", detail:"Upper breathable, midsole cushioning.", variants:{colors:["Merah","Hitam","Putih"],sizes:["39","40","41","42","43"]}, stock:60
+    images:[
+      "https://images.unsplash.com/photo-1519744792095-2f2205e87b6f?q=80&w=1200&auto=format&fit=crop&ixlib=rb-4.0.3&s=e3b2c1f5a6d7b8c9f0e1a2b3c4d5e6f7",
+      "https://images.unsplash.com/photo-1542291026-7eec264c27ff?q=80&w=1200&auto=format&fit=crop&ixlib=rb-4.0.3&s=6c9d7b3a2e4f1c5b8a7e9d6c4b3a2f1d"
+    ], rating:4.2, reviews:320, shop:"RunFast Store", desc:"Sepatu lari ringan.", detail:"Upper breathable, midsole cushioning.", variants:{colors:["Merah","Hitam","Putih"],sizes:["39","40","41","42","43"]}, stock:60
   },
   { id:202, title:"Jaket Denim Original", price:349000, category:"Fashion",
-    images:["https://source.unsplash.com/800x800/?denim,jacket&sig=203","https://source.unsplash.com/800x800/?jeans,jacket&sig=204"],
-    rating:4.5, reviews:180, shop:"DenimHouse", desc:"Jaket denim klasik.", detail:"100% cotton, multiple pockets.", variants:{colors:["Denim"],sizes:["S","M","L","XL"]}, stock:22
+    images:[
+      "https://images.unsplash.com/photo-1520975698514-6f1ed3b0f9b2?q=80&w=1200&auto=format&fit=crop&ixlib=rb-4.0.3&s=af2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d",
+      "https://images.unsplash.com/photo-1520975698514-6f1ed3b0f9b2?q=80&w=1200&auto=format&fit=crop&ixlib=rb-4.0.3&s=af2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d"
+    ], rating:4.5, reviews:180, shop:"DenimHouse", desc:"Jaket denim klasik.", detail:"100% cotton, multiple pockets.", variants:{colors:["Denim"],sizes:["S","M","L","XL"]}, stock:22
   },
   { id:203, title:"Tas Ransel Travel", price:299000, category:"Fashion",
-    images:["https://source.unsplash.com/800x800/?backpack,bag&sig=205","https://source.unsplash.com/800x800/?travel,backpack&sig=206"],
-    rating:4.3, reviews:210, shop:"BagPack", desc:"Ransel travel banyak kompartemen.", detail:"Capacity 25L, laptop sleeve.", variants:{colors:["Hitam","Hijau"],sizes:[]}, stock:30
+    images:[
+      "https://images.unsplash.com/photo-1504215680853-026ed2a45def?q=80&w=1200&auto=format&fit=crop&ixlib=rb-4.0.3&s=7c8d9e0b1a2c3d4e5f6a7b8c9d0e1f2a",
+      "https://images.unsplash.com/photo-1504215680853-026ed2a45def?q=80&w=1200&auto=format&fit=crop&ixlib=rb-4.0.3&s=7c8d9e0b1a2c3d4e5f6a7b8c9d0e1f2a"
+    ], rating:4.3, reviews:210, shop:"BagPack", desc:"Ransel travel banyak kompartemen.", detail:"Capacity 25L, laptop sleeve.", variants:{colors:["Hitam","Hijau"],sizes:[]}, stock:30
   },
   { id:301, title:"Meja Belajar Minimalis", price:899000, category:"Rumah Tangga",
-    images:["https://source.unsplash.com/800x800/?desk,table&sig=301","https://source.unsplash.com/800x800/?study,desk&sig=302"],
-    rating:4.6, reviews:105, shop:"HomeFit", desc:"Meja belajar modern.", detail:"Material MDF, easy assembly.", variants:{colors:["Oak","White"],sizes:[]}, stock:15
+    images:[
+      "https://images.unsplash.com/photo-1524758631624-e2822e304c36?q=80&w=1200&auto=format&fit=crop&ixlib=rb-4.0.3&s=4a9b8c7d6e5f4a3b2c1d0e9f8a7b6c5d",
+      "https://images.unsplash.com/photo-1524758631624-e2822e304c36?q=80&w=1200&auto=format&fit=crop&ixlib=rb-4.0.3&s=4a9b8c7d6e5f4a3b2c1d0e9f8a7b6c5d"
+    ], rating:4.6, reviews:105, shop:"HomeFit", desc:"Meja belajar modern.", detail:"Material MDF, easy assembly.", variants:{colors:["Oak","White"],sizes:[]}, stock:15
   },
   { id:302, title:"Lampu Meja LED", price:129000, category:"Rumah Tangga",
-    images:["https://source.unsplash.com/800x800/?lamp,desk&sig=303","https://source.unsplash.com/800x800/?lighting,desk&sig=304"],
-    rating:4.1, reviews:58, shop:"BrightHome", desc:"Lampu meja LED dimmable.", detail:"Dimmable, USB powered.", variants:{colors:["White","Black"],sizes:[]}, stock:100
+    images:[
+      "https://images.unsplash.com/photo-1519710164239-da123dc03ef4?q=80&w=1200&auto=format&fit=crop&ixlib=rb-4.0.3&s=8b7a6c5d4e3f2a1b0c9d8e7f6a5b4c3d",
+      "https://images.unsplash.com/photo-1519710164239-da123dc03ef4?q=80&w=1200&auto=format&fit=crop&ixlib=rb-4.0.3&s=8b7a6c5d4e3f2a1b0c9d8e7f6a5b4c3d"
+    ], rating:4.1, reviews:58, shop:"BrightHome", desc:"Lampu meja LED dimmable.", detail:"Dimmable, USB powered.", variants:{colors:["White","Black"],sizes:[]}, stock:100
   },
   { id:303, title:"Set Panci Stainless", price:399000, category:"Rumah Tangga",
-    images:["https://source.unsplash.com/800x800/?cookware,kitchen&sig=305","https://source.unsplash.com/800x800/?pan,kitchen&sig=306"],
-    rating:4.4, reviews:143, shop:"KitchenPro", desc:"Panci berkualitas.", detail:"Stainless steel, oven safe.", variants:{colors:[],sizes:[]}, stock:18
+    images:[
+      "https://images.unsplash.com/photo-1503602642458-232111445657?q=80&w=1200&auto=format&fit=crop&ixlib=rb-4.0.3&s=0e1f2d3c4b5a69788766554433221100",
+      "https://images.unsplash.com/photo-1503602642458-232111445657?q=80&w=1200&auto=format&fit=crop&ixlib=rb-4.0.3&s=0e1f2d3c4b5a69788766554433221100"
+    ], rating:4.4, reviews:143, shop:"KitchenPro", desc:"Panci berkualitas.", detail:"Stainless steel, oven safe.", variants:{colors:[],sizes:[]}, stock:18
   },
   { id:401, title:"Vitamin C 500mg", price:89000, category:"Kesehatan",
-    images:["https://source.unsplash.com/800x800/?vitamin,health&sig=401","https://source.unsplash.com/800x800/?supplement,vitamin&sig=402"],
-    rating:4.8, reviews:720, shop:"HealthPlus", desc:"Suplemen Vitamin C.", detail:"500mg per tablet, 60 tablets.", variants:{colors:[],sizes:[]}, stock:300
+    images:[
+      "https://images.unsplash.com/photo-1584270354949-3f4c0a4a4b26?q=80&w=1200&auto=format&fit=crop&ixlib=rb-4.0.3&s=d0c1b2a3e4f5968473625148392a1b2c",
+      "https://images.unsplash.com/photo-1584270354949-3f4c0a4a4b26?q=80&w=1200&auto=format&fit=crop&ixlib=rb-4.0.3&s=d0c1b2a3e4f5968473625148392a1b2c"
+    ], rating:4.8, reviews:720, shop:"HealthPlus", desc:"Suplemen Vitamin C.", detail:"500mg per tablet, 60 tablets.", variants:{colors:[],sizes:[]}, stock:300
   },
   { id:402, title:"Paket Skincare Basic", price:249000, category:"Kesehatan",
-    images:["https://source.unsplash.com/800x800/?skincare,beauty&sig=403","https://source.unsplash.com/800x800/?cosmetics,skincare&sig=404"],
-    rating:4.2, reviews:420, shop:"GlowCare", desc:"Set perawatan kulit untuk pemula.", detail:"Cleanser, toner, moisturizer.", variants:{colors:[],sizes:[]}, stock:120
+    images:[
+      "https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?q=80&w=1200&auto=format&fit=crop&ixlib=rb-4.0.3&s=7c3b1a2d5f6e8d9c0b1a2f3e4d5c6b7a",
+      "https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?q=80&w=1200&auto=format&fit=crop&ixlib=rb-4.0.3&s=7c3b1a2d5f6e8d9c0b1a2f3e4d5c6b7a"
+    ], rating:4.2, reviews:420, shop:"GlowCare", desc:"Set perawatan kulit untuk pemula.", detail:"Cleanser, toner, moisturizer.", variants:{colors:[],sizes:[]}, stock:120
   },
   { id:501, title:"Sepeda Gunung 26\"", price:3499000, category:"Olahraga",
-    images:["https://source.unsplash.com/800x800/?mountain,bike&sig=501","https://source.unsplash.com/800x800/?bicycle,mountain&sig=502"],
-    rating:4.5, reviews:89, shop:"CycleWorld", desc:"Sepeda gunung rangka kuat.", detail:"Frame steel, 21-speed.", variants:{colors:[],sizes:[]}, stock:6
+    images:[
+      "https://images.unsplash.com/photo-1503437313881-503a91226428?q=80&w=1200&auto=format&fit=crop&ixlib=rb-4.0.3&s=6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d",
+      "https://images.unsplash.com/photo-1503437313881-503a91226428?q=80&w=1200&auto=format&fit=crop&ixlib=rb-4.0.3&s=6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d"
+    ], rating:4.5, reviews:89, shop:"CycleWorld", desc:"Sepeda gunung rangka kuat.", detail:"Frame steel, 21-speed.", variants:{colors:[],sizes:[]}, stock:6
   },
   { id:502, title:"Matras Yoga", price:129000, category:"Olahraga",
-    images:["https://source.unsplash.com/800x800/?yoga,mat&sig=503","https://source.unsplash.com/800x800/?fitness,yoga&sig=504"],
-    rating:4.3, reviews:200, shop:"FlexFit", desc:"Matras anti slip nyaman.", detail:"Thickness 6mm, non-toxic.", variants:{colors:["Purple","Grey","Blue"],sizes:[]}, stock:120
+    images:[
+      "https://images.unsplash.com/photo-1518611012118-f7c1d0b0de8b?q=80&w=1200&auto=format&fit=crop&ixlib=rb-4.0.3&s=2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e",
+      "https://images.unsplash.com/photo-1518611012118-f7c1d0b0de8b?q=80&w=1200&auto=format&fit=crop&ixlib=rb-4.0.3&s=2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e"
+    ], rating:4.3, reviews:200, shop:"FlexFit", desc:"Matras anti slip nyaman.", detail:"Thickness 6mm, non-toxic.", variants:{colors:["Purple","Grey","Blue"],sizes:[]}, stock:120
   },
   { id:601, title:"Mainan Edukasi Anak", price:189000, category:"Anak & Bayi",
-    images:["https://source.unsplash.com/800x800/?kids,toy&sig=601","https://source.unsplash.com/800x800/?children,toys&sig=602"],
-    rating:4.7, reviews:150, shop:"KidsWorld", desc:"Mainan edukatif stimulasi anak.", detail:"Age 3+, colorful blocks.", variants:{colors:[],sizes:[]}, stock:80
+    images:[
+      "https://images.unsplash.com/photo-1545239351-1141bd82e8a6?q=80&w=1200&auto=format&fit=crop&ixlib=rb-4.0.3&s=9a8b7c6d5e4f3a2b1c0d9e8f7a6b5c4d",
+      "https://images.unsplash.com/photo-1545239351-1141bd82e8a6?q=80&w=1200&auto=format&fit=crop&ixlib=rb-4.0.3&s=9a8b7c6d5e4f3a2b1c0d9e8f7a6b5c4d"
+    ], rating:4.7, reviews:150, shop:"KidsWorld", desc:"Mainan edukatif stimulasi anak.", detail:"Age 3+, colorful blocks.", variants:{colors:[],sizes:[]}, stock:80
   },
   { id:602, title:"Stroller Bayi Ringan", price:999000, category:"Anak & Bayi",
-    images:["https://source.unsplash.com/800x800/?stroller,baby&sig=603","https://source.unsplash.com/800x800/?baby,pram&sig=604"],
-    rating:4.1, reviews:48, shop:"BabyCare", desc:"Stroller ringan, mudah dilipat.", detail:"Compact fold, safety harness.", variants:{colors:[],sizes:[]}, stock:10
+    images:[
+      "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?q=80&w=1200&auto=format&fit=crop&ixlib=rb-4.0.3&s=3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f",
+      "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?q=80&w=1200&auto=format&fit=crop&ixlib=rb-4.0.3&s=3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f"
+    ], rating:4.1, reviews:48, shop:"BabyCare", desc:"Stroller ringan, mudah dilipat.", detail:"Compact fold, safety harness.", variants:{colors:[],sizes:[]}, stock:10
   },
   { id:701, title:"Coklat Premium 250g", price:68000, category:"Makanan & Minuman",
-    images:["https://source.unsplash.com/800x800/?chocolate,candy&sig=701","https://source.unsplash.com/800x800/?chocolate,bar&sig=702"],
-    rating:4.9, reviews:520, shop:"SweetBite", desc:"Coklat premium rasa kaya.", detail:"Dark chocolate, 70% cocoa.", variants:{colors:[],sizes:[]}, stock:220
+    images:[
+      "https://images.unsplash.com/photo-1528825871115-3581a5387919?q=80&w=1200&auto=format&fit=crop&ixlib=rb-4.0.3&s=1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e",
+      "https://images.unsplash.com/photo-1505253758478-9f88c22f6a9b?q=80&w=1200&auto=format&fit=crop&ixlib=rb-4.0.3&s=6f5e4d3c2b1a09876543210abcdef123"
+    ], rating:4.9, reviews:520, shop:"SweetBite", desc:"Coklat premium rasa kaya.", detail:"Dark chocolate, 70% cocoa.", variants:{colors:[],sizes:[]}, stock:220
   },
   { id:702, title:"Kopi Arabica 250g", price:85000, category:"Makanan & Minuman",
-    images:["https://source.unsplash.com/800x800/?coffee,beans&sig=703","https://source.unsplash.com/800x800/?coffee,cup&sig=704"],
-    rating:4.6, reviews:300, shop:"RoastHouse", desc:"Kopi Arabica single origin.", detail:"250g pack, medium roast.", variants:{colors:[],sizes:[]}, stock:140
+    images:[
+      "https://images.unsplash.com/photo-1517976487492-6b7b9a0e6a25?q=80&w=1200&auto=format&fit=crop&ixlib=rb-4.0.3&s=4e5d6c7b8a9f0e1d2c3b4a5f6e7d8c9b",
+      "https://images.unsplash.com/photo-1509042239860-f550ce710b93?q=80&w=1200&auto=format&fit=crop&ixlib=rb-4.0.3&s=9a8b7c6d5e4f3a2b1c0d9e8f7a6b5c4d"
+    ], rating:4.6, reviews:300, shop:"RoastHouse", desc:"Kopi Arabica single origin.", detail:"250g pack, medium roast.", variants:{colors:[],sizes:[]}, stock:140
   },
   { id:703, title:"Snack Gurih 200g", price:25000, category:"Makanan & Minuman",
-    images:["https://source.unsplash.com/800x800/?snack,crisps&sig=705","https://source.unsplash.com/800x800/?chips,food&sig=706"],
-    rating:4.4, reviews:180, shop:"SnackTime", desc:"Snack gurih renyah.", detail:"200g pack, best before 6 months.", variants:{colors:[],sizes:[]}, stock:340
+    images:[
+      "https://images.unsplash.com/photo-1586201375779-5bb8e6f7b5b5?q=80&w=1200&auto=format&fit=crop&ixlib=rb-4.0.3&s=7e6f5d4c3b2a1908f7e6d5c4b3a2f1e0",
+      "https://images.unsplash.com/photo-1542444459-db2d2c6a7470?q=80&w=1200&auto=format&fit=crop&ixlib=rb-4.0.3&s=3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e"
+    ], rating:4.4, reviews:180, shop:"SnackTime", desc:"Snack gurih renyah.", detail:"200g pack, best before 6 months.", variants:{colors:[],sizes:[]}, stock:340
   }
 ];
 
@@ -379,9 +413,9 @@ function highlightCats(){
 
 /* slider */
 const sliderImages = [
-  "https://source.unsplash.com/1200x400/?shopping,online&sig=900",
-  "https://source.unsplash.com/1200x400/?sale,discount&sig=901",
-  "https://source.unsplash.com/1200x400/?market,store&sig=902"
+  "https://images.unsplash.com/photo-1512453979798-5ea266f8880c?q=80&w=1600&auto=format&fit=crop&ixlib=rb-4.0.3&s=6a7b8c9d0e1f2a3b",
+  "https://images.unsplash.com/photo-1495121605193-b116b5b09aa9?q=80&w=1600&auto=format&fit=crop&ixlib=rb-4.0.3&s=2b3c4d5e6f7a8b9c",
+  "https://images.unsplash.com/photo-1523275335684-37898b6baf30?q=80&w=1600&auto=format&fit=crop&ixlib=rb-4.0.3&s=1c2d3e4f5a6b7c8d"
 ];
 function renderSlider(){
   const slider = document.getElementById('slider'); slider.innerHTML='';
