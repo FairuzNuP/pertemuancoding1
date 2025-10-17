@@ -1,0 +1,25 @@
+:root{
+  --bg: #07020a;
+  --accent1: #ff7a2d;
+  --accent2: #ff4fb8;
+  --panel: rgba(255,255,255,0.03);
+  --muted: #9fb0c7;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:Inter,Arial,sans-serif;background:linear-gradient(180deg,#0b0410,#06020a);color:#eaf6ff;min-height:100vh;display:flex;flex-direction:column}
+#app{padding:14px;display:flex;flex-direction:column;gap:12px;height:100%}
+header{display:flex;align-items:center;gap:12px}
+h1{margin:0;color:var(--accent1)}
+.controls-top{margin-left:auto;display:flex;gap:8px}
+.btn{background:linear-gradient(180deg,rgba(255,255,255,0.02),transparent);border:1px solid rgba(255,255,255,0.04);padding:8px 10px;border-radius:8px;color:#eaf6ff;cursor:pointer}
+main{display:flex;flex:1;gap:12px;align-items:stretch}
+#viewport{flex:1;border-radius:10px;overflow:hidden;border:1px solid rgba(255,255,255,0.03);min-height:560px;position:relative;background:#02030a}
+#hud{width:320px;display:flex;flex-direction:column;gap:10px}
+.panel{background:linear-gradient(180deg,rgba(255,255,255,0.02),transparent);padding:10px;border-radius:10px;border:1px solid rgba(255,255,255,0.03)}
+.mini{background:#01111b;border-radius:6px;border:1px solid rgba(255,255,255,0.03);display:block;margin-top:6px}
+.leaderboard{max-height:180px;overflow:auto;margin-top:8px}
+footer{text-align:center;color:var(--muted);margin-top:6px}
+@media (max-width:960px){
+  main{flex-direction:column}
+  #hud{width:100%}
+}
