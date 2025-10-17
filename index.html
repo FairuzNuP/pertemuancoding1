@@ -1,601 +1,347 @@
 <!doctype html>
 <html lang="id">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Fairuz Shop — Marketplace (Tokopedia-inspired)</title>
-<meta name="description" content="Fairuz Shop — demo marketplace with categories, banner slider, product preview gallery, filters and cart (localStorage). Images from Unsplash by product."/>
-<style>
-  :root{
-    --bg:#f3f6f8; --card:#fff; --muted:#6b7280;
-    --primary:#06b981; --accent:#049d64; --glass:rgba(2,6,23,0.04);
-    --maxw:1200px; font-family:Inter,system-ui,Roboto,Arial,sans-serif;
-  }
-  *{box-sizing:border-box}
-  html,body{height:100%;margin:0;background:var(--bg);color:#0f172a}
-  a{color:var(--primary)}
-  img{display:block;max-width:100%}
-
-  /* TOPBAR */
-  .topbar{position:sticky;top:0;z-index:90;background:white;border-bottom:1px solid rgba(0,0,0,0.06)}
-  .topbar .inner{max-width:var(--maxw);margin:0 auto;display:flex;gap:12px;align-items:center;padding:12px}
-  .brand{display:flex;align-items:center;gap:10px}
-  .brand .mark{width:44px;height:44px;border-radius:10px;background:linear-gradient(135deg,var(--primary),var(--accent));display:grid;place-items:center;color:white;font-weight:800;font-size:20px}
-  .brand h1{font-size:18px;margin:0}
-  .searchbar{flex:1;display:flex;gap:8px;align-items:center}
-  .searchbar input{flex:1;padding:10px 12px;border-radius:10px;border:1px solid rgba(0,0,0,0.08);outline:none}
-  .searchbar button{padding:10px 14px;border-radius:10px;border:none;background:var(--primary);color:white;cursor:pointer;font-weight:700}
-  .icons{display:flex;gap:10px;align-items:center}
-  .icon-btn{background:transparent;border:0;padding:8px 10px;border-radius:8px;cursor:pointer;color:var(--muted)}
-  .cart-badge{background:var(--primary);color:white;padding:4px 8px;border-radius:999px;font-weight:700;font-size:13px}
-
-  /* CATEGORIES BAR */
-  .catbar{background:white;border-bottom:1px solid rgba(0,0,0,0.04);padding:8px 0}
-  .catbar .inner{max-width:var(--maxw);margin:0 auto;padding:0 12px;display:flex;gap:8px;overflow:auto;align-items:center}
-  .cat{flex:0 0 auto;padding:8px 12px;border-radius:999px;border:1px solid rgba(0,0,0,0.04);background:var(--glass);cursor:pointer;color:#0b6b4a;font-weight:700;white-space:nowrap}
-  .cat.active{background:linear-gradient(180deg,#eafaf0,#e2fae6);border-color:rgba(4,168,107,0.12)}
-
-  /* HERO */
-  .hero{max-width:var(--maxw);margin:18px auto;padding:0 12px;display:grid;grid-template-columns:1fr 300px;gap:16px;align-items:start}
-  .slider{height:240px;border-radius:12px;overflow:hidden;position:relative}
-  .slide{position:absolute;inset:0;background-size:cover;background-position:center;transition:opacity 450ms ease;opacity:0}
-  .slide.show{opacity:1}
-  .promo-cards{display:flex;flex-direction:column;gap:12px}
-  .promo{background:linear-gradient(180deg,#fff,#f6fffb);padding:14px;border-radius:10px;border:1px solid rgba(0,0,0,0.04)}
-  .promo h3{margin:0;color:var(--primary)}
-
-  /* CONTROLS */
-  .controls{max-width:var(--maxw);margin:12px auto;padding:0 12px;display:flex;justify-content:space-between;gap:12px;align-items:center}
-  .filters{display:flex;gap:8px;align-items:center}
-  .filters select,.filters input{padding:8px;border-radius:8px;border:1px solid rgba(0,0,0,0.06)}
-  .sort{display:flex;gap:8px;align-items:center}
-
-  /* LAYOUT */
-  .layout{max-width:var(--maxw);margin:0 auto;padding:12px;display:grid;grid-template-columns:260px 1fr;gap:18px}
-  .sidebar{background:var(--card);border-radius:10px;padding:12px;border:1px solid rgba(0,0,0,0.04);height:calc(100vh - 340px);overflow:auto}
-  .sidebar h3{margin-top:0}
-  .category-list{display:flex;flex-direction:column;gap:6px}
-  .category-list button{background:transparent;border:0;padding:8px;border-radius:8px;text-align:left;cursor:pointer}
-  .category-list button:hover{background:var(--glass)}
-
-  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px}
-  .card{background:var(--card);border-radius:12px;padding:12px;border:1px solid rgba(0,0,0,0.04);display:flex;flex-direction:column;gap:8px;cursor:pointer;transition:transform .12s,box-shadow .12s}
-  .card:hover{transform:translateY(-6px);box-shadow:0 12px 28px rgba(2,6,23,0.06)}
-  .media{height:160px;border-radius:10px;overflow:hidden;background:#efefef;display:grid;place-items:center}
-  .media img{width:100%;height:100%;object-fit:cover}
-  .title{font-weight:700;font-size:14px;min-height:44px}
-  .price{color:var(--primary);font-weight:800}
-  .shop{font-size:12px;color:var(--muted)}
-
-  /* CART DRAWER */
-  .cart-drawer{position:fixed;right:12px;top:84px;width:380px;max-width:92vw;background:var(--card);border-radius:12px;padding:12px;border:1px solid rgba(0,0,0,0.06);box-shadow:0 18px 48px rgba(2,6,23,0.08);z-index:120;display:none}
-  .cart-drawer.open{display:block}
-  .cart-item{display:flex;gap:8px;align-items:center;padding:10px;border-bottom:1px dashed rgba(0,0,0,0.04)}
-  .cart-item img{width:64px;height:64px;object-fit:cover;border-radius:8px}
-  .cart-footer{display:flex;justify-content:space-between;align-items:center;margin-top:12px}
-
-  /* MODAL */
-  .modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(2,6,23,0.5);z-index:200;padding:20px}
-  .modal.open{display:flex}
-  .modal-card{width:min(1000px,98vw);background:white;border-radius:12px;overflow:hidden;display:grid;grid-template-columns:460px 1fr}
-  .gallery{background:#fafafa;padding:12px;display:flex;flex-direction:column;gap:10px}
-  .gallery-main{height:420px;border-radius:8px;overflow:hidden;display:grid;place-items:center;background:#111}
-  .gallery-main img{max-width:100%;max-height:100%;object-fit:contain}
-  .gallery-thumbs{display:flex;gap:8px;overflow:auto;padding-top:6px}
-  .thumb{width:72px;height:72px;border-radius:6px;overflow:hidden;border:2px solid transparent;cursor:pointer;flex:0 0 auto}
-  .thumb img{width:100%;height:100%;object-fit:cover}
-  .thumb.active{border-color:var(--primary)}
-
-  .detail{padding:18px;display:flex;flex-direction:column;gap:12px}
-  .detail h2{margin:0}
-  .rating{display:flex;gap:8px;align-items:center;color:#f59e0b;font-weight:700}
-  .detail .price{font-size:20px}
-  .qty{display:flex;gap:8px;align-items:center}
-  .qty button{padding:6px 10px;border-radius:8px;border:1px solid rgba(0,0,0,0.06);background:var(--glass);cursor:pointer}
-  .actions{display:flex;gap:10px}
-  .btn-primary{background:var(--primary);color:white;padding:10px 12px;border-radius:8px;border:none;cursor:pointer;font-weight:700}
-  .btn-ghost{background:transparent;border:1px solid rgba(0,0,0,0.08);padding:10px 12px;border-radius:8px;cursor:pointer}
-
-  /* responsive */
-  @media(max-width:1000px){
-    .hero{grid-template-columns:1fr}
-    .modal-card{grid-template-columns:1fr}
-    .gallery-main{height:320px}
-    .sidebar{display:none}
-  }
-  @media(max-width:700px){
-    .media{height:120px}
-    .gallery-main{height:260px}
-    .topbar .inner{padding:8px}
-  }
-</style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Tetris Sederhana — Versi Seru</title>
+  <style>
+    :root{--cell:28px;--cols:10;--rows:20}
+    html,body{height:100%;margin:0;font-family:Inter, system-ui, Arial;background:linear-gradient(180deg,#0f172a,#071024);color:#e6eef8}
+    .wrap{min-height:100%;display:flex;align-items:center;justify-content:center;padding:28px}
+    .board{display:grid;grid-template-columns:1fr 260px;gap:20px;align-items:start}
+    .game{background:#061025;padding:12px;border-radius:12px;box-shadow:0 8px 30px rgba(2,6,23,.7);position:relative}
+    canvas#tetris{background:#041024;border:3px solid #00b4ff;box-shadow:0 0 15px rgba(0,180,255,0.4) inset, 0 0 10px rgba(0,180,255,0.3);border-radius:8px;display:block}
+    .overlay{position:absolute;left:12px;top:12px;width:calc(100% - 24px);height:calc(100% - 24px);display:flex;align-items:center;justify-content:center;pointer-events:none}
+    .overlay .box{background:rgba(3,6,12,0.85);border:2px solid rgba(255,255,255,0.06);padding:18px;border-radius:10px;color:#dff0ff;text-align:center;pointer-events:auto}
+    .overlay .box h2{margin:0 0 8px;font-size:18px}
+    .overlay .box p{margin:0 0 12px;color:#9fb9d6}
+    .overlay .box button{cursor:pointer}
+    .side{width:260px}
+    h1{font-size:18px;margin:0 0 8px}
+    .panel{background:linear-gradient(180deg,#071733,#032033);padding:12px;border-radius:10px;margin-bottom:12px;color:#cfe8ff}
+    .small{font-size:13px;color:#9fc6ff}
+    .controls{display:flex;gap:8px;flex-wrap:wrap}
+    button{background:#0b2640;border:1px solid rgba(255,255,255,0.04);color:#dff0ff;padding:8px 10px;border-radius:8px;cursor:pointer}
+    .hint{font-size:13px;color:#9fb9d6;margin-top:6px}
+    .next-canvas{background:#041024;border-radius:8px;display:block;margin-top:8px;border:2px solid #555}
+    footer{font-size:12px;color:#8fb4d9;margin-top:6px;text-align:center}
+  </style>
 </head>
-<body>
-
-  <!-- TOPBAR -->
-  <header class="topbar" role="banner">
-    <div class="inner">
-      <div class="brand" aria-label="Fairuz Shop">
-        <div class="mark">F</div>
-        <div>
-          <h1>Fairuz Shop</h1>
-          <div style="font-size:12px;color:var(--muted)">Marketplace Prototype</div>
+<body tabindex="0">
+  <div class="wrap">
+    <div class="board">
+      <div class="game">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px">
+          <h1>Tetris Sederhana — Versi Seru</h1>
+          <div class="small">Mainkan dengan keyboard atau tombol UI</div>
         </div>
-      </div>
+        <canvas id="tetris" width="280" height="560"></canvas>
 
-      <div class="searchbar" role="search">
-        <input id="searchInput" placeholder="Cari produk, brand, atau kategori..." aria-label="Cari produk">
-        <button id="btnSearch">Cari</button>
-      </div>
-
-      <div class="icons" aria-hidden="false">
-        <button class="icon-btn" id="btnProfile" title="Akun">👤</button>
-        <button class="icon-btn" id="btnWishlist" title="Wishlist">❤</button>
-        <button class="icon-btn" id="btnCartToggle" aria-haspopup="true" aria-expanded="false" title="Keranjang">🛒 <span class="cart-badge" id="cartCount">0</span></button>
-      </div>
-    </div>
-  </header>
-
-  <!-- CATEGORY BAR -->
-  <div class="catbar" role="navigation" aria-label="Kategori">
-    <div class="inner" id="catBar"></div>
-  </div>
-
-  <!-- HERO -->
-  <section class="hero" aria-label="Promo">
-    <div class="slider" id="slider"></div>
-    <aside class="promo-cards" aria-hidden="true">
-      <div class="promo">
-        <h3>Flash Sale Hari Ini</h3>
-        <p>Diskon hingga 70% untuk produk terpilih.</p>
-      </div>
-      <div class="promo">
-        <h3>Gratis Ongkir</h3>
-        <p>Untuk pembelian di atas Rp 200.000</p>
-      </div>
-    </aside>
-  </section>
-
-  <!-- CONTROLS -->
-  <div class="controls" role="region" aria-label="Filter dan sorting">
-    <div class="filters">
-      <select id="filterCategory"><option value="all">Semua Kategori</option></select>
-      <input id="minPrice" type="number" placeholder="Min (Rp)">
-      <input id="maxPrice" type="number" placeholder="Max (Rp)">
-      <button id="applyFilter" class="btn-ghost">Terapkan</button>
-      <button id="resetFilter" class="btn-ghost">Reset</button>
-    </div>
-    <div class="sort">Urutkan: <select id="sortSelect"><option value="relevance">Relevansi</option><option value="price-asc">Harga: Rendah ke Tinggi</option><option value="price-desc">Harga: Tinggi ke Rendah</option></select></div>
-  </div>
-
-  <!-- LAYOUT -->
-  <div class="layout" role="main">
-    <aside class="sidebar" aria-label="Sidebar kategori">
-      <h3>Kategori</h3>
-      <div class="category-list" id="sidebarCats"></div>
-      <hr />
-      <h4>Filter Cepat</h4>
-      <button onclick="quickFilter('Elektronik')">Elektronik</button>
-      <button onclick="quickFilter('Fashion')">Fashion</button>
-      <button onclick="quickFilter('Rumah Tangga')">Rumah Tangga</button>
-    </aside>
-
-    <section class="main-grid">
-      <div class="grid" id="productGrid" tabindex="0"></div>
-    </section>
-  </div>
-
-  <!-- CART DRAWER -->
-  <aside class="cart-drawer" id="cartDrawer" role="region" aria-label="Keranjang belanja">
-    <h3>Keranjang</h3>
-    <div id="cartList"></div>
-    <div class="cart-footer">
-      <div><strong>Total:</strong> Rp <span id="cartTotal">0</span></div>
-      <div><button id="checkoutBtn" class="btn-primary">Checkout</button></div>
-    </div>
-  </aside>
-
-  <!-- PRODUCT PREVIEW MODAL -->
-  <div class="modal" id="modal" role="dialog" aria-modal="true" aria-hidden="true">
-    <div class="modal-card" role="document">
-      <div class="gallery">
-        <div style="display:flex;justify-content:space-between;align-items:center">
-          <div style="font-weight:700;color:var(--muted)">GALLERY</div>
-          <div>
-            <button id="prevImg" class="btn-ghost" aria-label="Sebelumnya">◀</button>
-            <button id="nextImg" class="btn-ghost" aria-label="Selanjutnya">▶</button>
-          </div>
-        </div>
-        <div class="gallery-main" id="galleryMain"></div>
-        <div class="gallery-thumbs" id="galleryThumbs" role="tablist"></div>
-      </div>
-
-      <div class="detail">
-        <div style="display:flex;justify-content:space-between;align-items:flex-start">
-          <div>
-            <h2 id="pTitle">Product Title</h2>
-            <div class="shop" id="pShop">Fairuz Official Store</div>
-          </div>
-          <button id="closeModal" class="btn-ghost" aria-label="Tutup preview">✕</button>
-        </div>
-
-        <div class="rating" id="pRating">★★★★★ <span style="color:var(--muted);font-weight:500;margin-left:8px">4.8 (120)</span></div>
-        <div class="price" id="pPrice">Rp 0</div>
-        <div id="pDesc" style="color:var(--muted);line-height:1.4"></div>
-
-        <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
-          <div>
-            <label><strong>Warna</strong></label>
-            <select id="variantColor"></select>
-          </div>
-          <div>
-            <label><strong>Ukuran</strong></label>
-            <select id="variantSize"></select>
-          </div>
-          <div class="qty">
-            <button id="qtyDec" aria-label="Kurangi">−</button>
-            <input id="qtyInput" type="number" value="1" min="1" style="width:60px;padding:6px;border-radius:8px;border:1px solid rgba(0,0,0,0.06);text-align:center"/>
-            <button id="qtyInc" aria-label="Tambah">+</button>
-          </div>
-
-          <div style="margin-left:auto;display:flex;gap:8px">
-            <button id="addCartBtn" class="btn-primary">Tambah ke Keranjang</button>
-            <button id="buyBtn" class="btn-ghost">Beli Sekarang</button>
+        <div id="overlay" class="overlay" style="display:none">
+          <div class="box">
+            <h2 id="overlay-title">Game Over</h2>
+            <p id="overlay-msg">Permainan selesai — area penuh. Tekan Restart untuk bermain lagi.</p>
+            <div style="display:flex;gap:8px;justify-content:center">
+              <button id="overlay-restart">Restart</button>
+              <button id="overlay-close">Tutup</button>
+            </div>
           </div>
         </div>
 
-        <div style="margin-top:12px;color:var(--muted);font-size:13px">
-          <strong>Detail Produk:</strong>
-          <div id="pDetail" style="margin-top:6px"></div>
+        <div class="hint small">
+          Controls: ← → (geser), ↑ (rotate), ↓ (soft drop), space (hard drop),
+          Shift (turbo), P (pause)
         </div>
+      </div>
+
+      <div class="side">
+        <div class="panel">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div>
+              <div class="small">Skor</div>
+              <div id="score" style="font-size:20px">0</div>
+            </div>
+            <div>
+              <div class="small">Level</div>
+              <div id="level" style="font-size:20px">1</div>
+            </div>
+            <div>
+              <div class="small">Baris</div>
+              <div id="lines" style="font-size:20px">0</div>
+            </div>
+          </div>
+          <div style="margin-top:8px">
+            <div class="small">High Score</div>
+            <div id="highscore" style="font-size:18px">0</div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="small">Next</div>
+          <canvas id="next" class="next-canvas" width="112" height="112"></canvas>
+        </div>
+
+        <div class="panel controls">
+          <button id="btn-left">←</button>
+          <button id="btn-rotate">↑</button>
+          <button id="btn-right">→</button>
+          <button id="btn-down">↓</button>
+          <button id="btn-drop">Space</button>
+        </div>
+
+        <div class="panel">
+          <button id="btn-pause">Pause</button>
+          <button id="btn-restart">Restart</button>
+          <button id="btn-music">🎵 Music On/Off</button>
+          <div class="hint">Tekan P untuk jeda. Permainan berakhir jika blok mencapai batas atas.</div>
+        </div>
+
+        <footer>
+          <div>Made with ♥ — Tetris Seru</div>
+          <div>(c) 2025 <strong>Ekskul Coding SMAN 2 Pangkalan Bun</strong></div>
+          <div>Dimentori oleh <strong>ahliweb.com</strong></div>
+        </footer>
       </div>
     </div>
   </div>
-
-  <footer style="max-width:var(--maxw);margin:24px auto;padding:12px;text-align:center;background:#fff;border-top:1px solid #eee;">
-    Website ini terinspirasi dari <a href="https://www.tokopedia.com" target="_blank" rel="noopener">Tokopedia</a>.
-  </footer>
 
 <script>
-/* ===== DATA (hardcoded Unsplash images matching product) ===== */
-const PRODUCTS = [
-  { id:101, title:"Smartphone Nova X", price:2799000, category:"Elektronik",
-    images:[
-      "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?q=80&w=1200&auto=format&fit=crop&ixlib=rb-4.0.3&s=5e354e5c9b1a9db6466b740249bca7d5",
-      "https://images.unsplash.com/photo-1510557880182-3d4d3cf3e5e3?q=80&w=1200&auto=format&fit=crop&ixlib=rb-4.0.3&s=1a8b5c2b0f1b3a2e7a4d2e1f83b9d2c1",
-      "https://images.unsplash.com/photo-1512496015851-a90fb38ba796?q=80&w=1200&auto=format&fit=crop&ixlib=rb-4.0.3&s=aa6b3f6b9a4aee3b2f7d8b6d16c3f2c7"
-    ], rating:4.6, reviews:245, shop:"Nova Official", desc:"Ponsel canggih dengan kamera 48MP, RAM 8GB.", detail:"Layar 6.5\", 8GB RAM, 128GB storage, fast charging.", variants:{colors:["Hitam","Putih","Biru"], sizes:["64GB","128GB"]}, stock:25
-  },
-  { id:102, title:"Laptop UltraBook Pro", price:10999000, category:"Elektronik",
-    images:[
-      "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?q=80&w=1200&auto=format&fit=crop&ixlib=rb-4.0.3&s=4c2d3fbe5b7b5d3b1c6b8ef1d2c3e6b7",
-      "https://images.unsplash.com/photo-1498050108023-c5249f4df085?q=80&w=1200&auto=format&fit=crop&ixlib=rb-4.0.3&s=3a1f4e2b6d5c7f9b8a2b3c4d5e6f7a8b"
-    ], rating:4.7, reviews:98, shop:"Fairuz Tech", desc:"Laptop tipis untuk kerja & kreasi.", detail:"Intel i7, 16GB RAM, 512GB SSD.", variants:{colors:["Silver"],sizes:["16GB/512GB"]}, stock:8
-  },
-  { id:103, title:"Headphone ANC Wireless", price:899000, category:"Elektronik",
-    images:[
-      "https://images.unsplash.com/photo-1518441902118-2e7f8d2cfb52?q=80&w=1200&auto=format&fit=crop&ixlib=rb-4.0.3&s=b5c1d6e4f7a8b9c0d1e2f3a4b5c6d7e8",
-      "https://images.unsplash.com/photo-1518441902118-2e7f8d2cfb52?q=80&w=1200&auto=format&fit=crop&ixlib=rb-4.0.3&s=b5c1d6e4f7a8b9c0d1e2f3a4b5c6d7e8"
-    ], rating:4.4, reviews:512, shop:"SoundCo", desc:"Noise cancelling, audio jernih.", detail:"ANC, bluetooth 5.2, 30 jam playtime.", variants:{colors:["Hitam","Abu"],sizes:[]}, stock:40
-  },
-  { id:201, title:"Sneakers RunFast", price:459000, category:"Fashion",
-    images:[
-      "https://images.unsplash.com/photo-1519744792095-2f2205e87b6f?q=80&w=1200&auto=format&fit=crop&ixlib=rb-4.0.3&s=e3b2c1f5a6d7b8c9f0e1a2b3c4d5e6f7",
-      "https://images.unsplash.com/photo-1542291026-7eec264c27ff?q=80&w=1200&auto=format&fit=crop&ixlib=rb-4.0.3&s=6c9d7b3a2e4f1c5b8a7e9d6c4b3a2f1d"
-    ], rating:4.2, reviews:320, shop:"RunFast Store", desc:"Sepatu lari ringan.", detail:"Upper breathable, midsole cushioning.", variants:{colors:["Merah","Hitam","Putih"],sizes:["39","40","41","42","43"]}, stock:60
-  },
-  { id:202, title:"Jaket Denim Original", price:349000, category:"Fashion",
-    images:[
-      "https://images.unsplash.com/photo-1520975698514-6f1ed3b0f9b2?q=80&w=1200&auto=format&fit=crop&ixlib=rb-4.0.3&s=af2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d",
-      "https://images.unsplash.com/photo-1520975698514-6f1ed3b0f9b2?q=80&w=1200&auto=format&fit=crop&ixlib=rb-4.0.3&s=af2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d"
-    ], rating:4.5, reviews:180, shop:"DenimHouse", desc:"Jaket denim klasik.", detail:"100% cotton, multiple pockets.", variants:{colors:["Denim"],sizes:["S","M","L","XL"]}, stock:22
-  },
-  { id:203, title:"Tas Ransel Travel", price:299000, category:"Fashion",
-    images:[
-      "https://images.unsplash.com/photo-1504215680853-026ed2a45def?q=80&w=1200&auto=format&fit=crop&ixlib=rb-4.0.3&s=7c8d9e0b1a2c3d4e5f6a7b8c9d0e1f2a",
-      "https://images.unsplash.com/photo-1504215680853-026ed2a45def?q=80&w=1200&auto=format&fit=crop&ixlib=rb-4.0.3&s=7c8d9e0b1a2c3d4e5f6a7b8c9d0e1f2a"
-    ], rating:4.3, reviews:210, shop:"BagPack", desc:"Ransel travel banyak kompartemen.", detail:"Capacity 25L, laptop sleeve.", variants:{colors:["Hitam","Hijau"],sizes:[]}, stock:30
-  },
-  { id:301, title:"Meja Belajar Minimalis", price:899000, category:"Rumah Tangga",
-    images:[
-      "https://images.unsplash.com/photo-1524758631624-e2822e304c36?q=80&w=1200&auto=format&fit=crop&ixlib=rb-4.0.3&s=4a9b8c7d6e5f4a3b2c1d0e9f8a7b6c5d",
-      "https://images.unsplash.com/photo-1524758631624-e2822e304c36?q=80&w=1200&auto=format&fit=crop&ixlib=rb-4.0.3&s=4a9b8c7d6e5f4a3b2c1d0e9f8a7b6c5d"
-    ], rating:4.6, reviews:105, shop:"HomeFit", desc:"Meja belajar modern.", detail:"Material MDF, easy assembly.", variants:{colors:["Oak","White"],sizes:[]}, stock:15
-  },
-  { id:302, title:"Lampu Meja LED", price:129000, category:"Rumah Tangga",
-    images:[
-      "https://images.unsplash.com/photo-1519710164239-da123dc03ef4?q=80&w=1200&auto=format&fit=crop&ixlib=rb-4.0.3&s=8b7a6c5d4e3f2a1b0c9d8e7f6a5b4c3d",
-      "https://images.unsplash.com/photo-1519710164239-da123dc03ef4?q=80&w=1200&auto=format&fit=crop&ixlib=rb-4.0.3&s=8b7a6c5d4e3f2a1b0c9d8e7f6a5b4c3d"
-    ], rating:4.1, reviews:58, shop:"BrightHome", desc:"Lampu meja LED dimmable.", detail:"Dimmable, USB powered.", variants:{colors:["White","Black"],sizes:[]}, stock:100
-  },
-  { id:303, title:"Set Panci Stainless", price:399000, category:"Rumah Tangga",
-    images:[
-      "https://images.unsplash.com/photo-1503602642458-232111445657?q=80&w=1200&auto=format&fit=crop&ixlib=rb-4.0.3&s=0e1f2d3c4b5a69788766554433221100",
-      "https://images.unsplash.com/photo-1503602642458-232111445657?q=80&w=1200&auto=format&fit=crop&ixlib=rb-4.0.3&s=0e1f2d3c4b5a69788766554433221100"
-    ], rating:4.4, reviews:143, shop:"KitchenPro", desc:"Panci berkualitas.", detail:"Stainless steel, oven safe.", variants:{colors:[],sizes:[]}, stock:18
-  },
-  { id:401, title:"Vitamin C 500mg", price:89000, category:"Kesehatan",
-    images:[
-      "https://images.unsplash.com/photo-1584270354949-3f4c0a4a4b26?q=80&w=1200&auto=format&fit=crop&ixlib=rb-4.0.3&s=d0c1b2a3e4f5968473625148392a1b2c",
-      "https://images.unsplash.com/photo-1584270354949-3f4c0a4a4b26?q=80&w=1200&auto=format&fit=crop&ixlib=rb-4.0.3&s=d0c1b2a3e4f5968473625148392a1b2c"
-    ], rating:4.8, reviews:720, shop:"HealthPlus", desc:"Suplemen Vitamin C.", detail:"500mg per tablet, 60 tablets.", variants:{colors:[],sizes:[]}, stock:300
-  },
-  { id:402, title:"Paket Skincare Basic", price:249000, category:"Kesehatan",
-    images:[
-      "https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?q=80&w=1200&auto=format&fit=crop&ixlib=rb-4.0.3&s=7c3b1a2d5f6e8d9c0b1a2f3e4d5c6b7a",
-      "https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?q=80&w=1200&auto=format&fit=crop&ixlib=rb-4.0.3&s=7c3b1a2d5f6e8d9c0b1a2f3e4d5c6b7a"
-    ], rating:4.2, reviews:420, shop:"GlowCare", desc:"Set perawatan kulit untuk pemula.", detail:"Cleanser, toner, moisturizer.", variants:{colors:[],sizes:[]}, stock:120
-  },
-  { id:501, title:"Sepeda Gunung 26\"", price:3499000, category:"Olahraga",
-    images:[
-      "https://images.unsplash.com/photo-1503437313881-503a91226428?q=80&w=1200&auto=format&fit=crop&ixlib=rb-4.0.3&s=6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d",
-      "https://images.unsplash.com/photo-1503437313881-503a91226428?q=80&w=1200&auto=format&fit=crop&ixlib=rb-4.0.3&s=6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d"
-    ], rating:4.5, reviews:89, shop:"CycleWorld", desc:"Sepeda gunung rangka kuat.", detail:"Frame steel, 21-speed.", variants:{colors:[],sizes:[]}, stock:6
-  },
-  { id:502, title:"Matras Yoga", price:129000, category:"Olahraga",
-    images:[
-      "https://images.unsplash.com/photo-1518611012118-f7c1d0b0de8b?q=80&w=1200&auto=format&fit=crop&ixlib=rb-4.0.3&s=2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e",
-      "https://images.unsplash.com/photo-1518611012118-f7c1d0b0de8b?q=80&w=1200&auto=format&fit=crop&ixlib=rb-4.0.3&s=2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e"
-    ], rating:4.3, reviews:200, shop:"FlexFit", desc:"Matras anti slip nyaman.", detail:"Thickness 6mm, non-toxic.", variants:{colors:["Purple","Grey","Blue"],sizes:[]}, stock:120
-  },
-  { id:601, title:"Mainan Edukasi Anak", price:189000, category:"Anak & Bayi",
-    images:[
-      "https://images.unsplash.com/photo-1545239351-1141bd82e8a6?q=80&w=1200&auto=format&fit=crop&ixlib=rb-4.0.3&s=9a8b7c6d5e4f3a2b1c0d9e8f7a6b5c4d",
-      "https://images.unsplash.com/photo-1545239351-1141bd82e8a6?q=80&w=1200&auto=format&fit=crop&ixlib=rb-4.0.3&s=9a8b7c6d5e4f3a2b1c0d9e8f7a6b5c4d"
-    ], rating:4.7, reviews:150, shop:"KidsWorld", desc:"Mainan edukatif stimulasi anak.", detail:"Age 3+, colorful blocks.", variants:{colors:[],sizes:[]}, stock:80
-  },
-  { id:602, title:"Stroller Bayi Ringan", price:999000, category:"Anak & Bayi",
-    images:[
-      "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?q=80&w=1200&auto=format&fit=crop&ixlib=rb-4.0.3&s=3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f",
-      "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?q=80&w=1200&auto=format&fit=crop&ixlib=rb-4.0.3&s=3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f"
-    ], rating:4.1, reviews:48, shop:"BabyCare", desc:"Stroller ringan, mudah dilipat.", detail:"Compact fold, safety harness.", variants:{colors:[],sizes:[]}, stock:10
-  },
-  { id:701, title:"Coklat Premium 250g", price:68000, category:"Makanan & Minuman",
-    images:[
-      "https://images.unsplash.com/photo-1528825871115-3581a5387919?q=80&w=1200&auto=format&fit=crop&ixlib=rb-4.0.3&s=1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e",
-      "https://images.unsplash.com/photo-1505253758478-9f88c22f6a9b?q=80&w=1200&auto=format&fit=crop&ixlib=rb-4.0.3&s=6f5e4d3c2b1a09876543210abcdef123"
-    ], rating:4.9, reviews:520, shop:"SweetBite", desc:"Coklat premium rasa kaya.", detail:"Dark chocolate, 70% cocoa.", variants:{colors:[],sizes:[]}, stock:220
-  },
-  { id:702, title:"Kopi Arabica 250g", price:85000, category:"Makanan & Minuman",
-    images:[
-      "https://images.unsplash.com/photo-1517976487492-6b7b9a0e6a25?q=80&w=1200&auto=format&fit=crop&ixlib=rb-4.0.3&s=4e5d6c7b8a9f0e1d2c3b4a5f6e7d8c9b",
-      "https://images.unsplash.com/photo-1509042239860-f550ce710b93?q=80&w=1200&auto=format&fit=crop&ixlib=rb-4.0.3&s=9a8b7c6d5e4f3a2b1c0d9e8f7a6b5c4d"
-    ], rating:4.6, reviews:300, shop:"RoastHouse", desc:"Kopi Arabica single origin.", detail:"250g pack, medium roast.", variants:{colors:[],sizes:[]}, stock:140
-  },
-  { id:703, title:"Snack Gurih 200g", price:25000, category:"Makanan & Minuman",
-    images:[
-      "https://images.unsplash.com/photo-1586201375779-5bb8e6f7b5b5?q=80&w=1200&auto=format&fit=crop&ixlib=rb-4.0.3&s=7e6f5d4c3b2a1908f7e6d5c4b3a2f1e0",
-      "https://images.unsplash.com/photo-1542444459-db2d2c6a7470?q=80&w=1200&auto=format&fit=crop&ixlib=rb-4.0.3&s=3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e"
-    ], rating:4.4, reviews:180, shop:"SnackTime", desc:"Snack gurih renyah.", detail:"200g pack, best before 6 months.", variants:{colors:[],sizes:[]}, stock:340
-  }
-];
+const canvas = document.getElementById('tetris');
+const ctx = canvas.getContext('2d');
+const nextCanvas = document.getElementById('next');
+const nctx = nextCanvas.getContext('2d');
+const overlay = document.getElementById('overlay');
+const overlayTitle = document.getElementById('overlay-title');
+const overlayMsg = document.getElementById('overlay-msg');
+const overlayRestart = document.getElementById('overlay-restart');
+const overlayClose = document.getElementById('overlay-close');
 
-/* ===== STATE ===== */
-const state = {
-  products: PRODUCTS.slice(),
-  activeCategory: 'all',
-  search: '',
-  minPrice: 0,
-  maxPrice: Infinity,
-  sort: 'relevance',
-  cart: JSON.parse(localStorage.getItem('fairuz_cart_v1') || '[]'),
-  preview: { product: null, idx: 0 }
+const scale = 28;
+const COLS = 10, ROWS = 20;
+
+// warna dinamis
+function getLevelColor(baseColor, lvl) {
+  const factor = Math.min(lvl * 0.1 + 1, 1.5);
+  const c = parseInt(baseColor.slice(1), 16);
+  let r = Math.min(255, ((c >> 16) & 255) * factor);
+  let g = Math.min(255, ((c >> 8) & 255) * factor);
+  let b = Math.min(255, (c & 255) * factor);
+  return `rgb(${r},${g},${b})`;
+}
+const baseColors = [null,'#00f0f0','#0050f0','#f0a000','#f0f000','#00f000','#a000f0','#f04040'];
+function getColor(index){ return getLevelColor(baseColors[index], level); }
+
+const pieces = 'IOTSZJL';
+const shapes = {
+  I: [[0,0,0,0],[1,1,1,1],[0,0,0,0],[0,0,0,0]],
+  O: [[2,2],[2,2]],
+  T: [[0,3,0],[3,3,3],[0,0,0]],
+  S: [[0,4,4],[4,4,0],[0,0,0]],
+  Z: [[5,5,0],[0,5,5],[0,0,0]],
+  J: [[6,0,0],[6,6,6],[0,0,0]],
+  L: [[0,0,7],[7,7,7],[0,0,0]]
 };
 
-/* ===== HELPERS ===== */
-const el = id => document.getElementById(id);
-const format = n => n.toLocaleString('id-ID');
+function createMatrix(w,h){ const m=[]; while(h--) m.push(new Array(w).fill(0)); return m; }
+let arena = createMatrix(COLS,ROWS);
 
-/* ===== RENDER CATEGORIES & SLIDER ===== */
-function renderCategories(){
-  const cats = ['all', ...Array.from(new Set(PRODUCTS.map(p=>p.category)))];
-  const catBar = document.getElementById('catBar');
-  const select = document.getElementById('filterCategory');
-  const sidebar = document.getElementById('sidebarCats');
-  catBar.innerHTML = ''; select.innerHTML = '<option value="all">Semua Kategori</option>'; sidebar.innerHTML = '';
-  cats.forEach(c=>{
-    const label = c==='all' ? 'Semua' : c;
-    const btn = document.createElement('button'); btn.className='cat'; btn.textContent = label;
-    btn.onclick = ()=> { state.activeCategory = c; applyFilters(); highlightCats(); };
-    catBar.appendChild(btn);
-    if(c!=='all'){
-      const opt = document.createElement('option'); opt.value = c; opt.textContent = c; select.appendChild(opt);
-      const sb = document.createElement('button'); sb.textContent = c; sb.onclick = ()=>{ state.activeCategory = c; applyFilters(); highlightCats(); }; sidebar.appendChild(sb);
+// audio
+const AudioCtx = window.AudioContext || window.webkitAudioContext;
+let audioCtx=null;
+function ensureAudio(){ if(!audioCtx){ try{ audioCtx = new AudioCtx(); }catch(e){ audioCtx = null; } } }
+function playLockSound(){ if(!audioCtx) return; const now=audioCtx.currentTime; const osc=audioCtx.createOscillator(); const gain=audioCtx.createGain(); osc.type='sine'; osc.frequency.setValueAtTime(220, now); gain.gain.setValueAtTime(0, now); gain.gain.linearRampToValueAtTime(0.12, now+0.001); gain.gain.exponentialRampToValueAtTime(0.001, now+0.25); osc.connect(gain); gain.connect(audioCtx.destination); osc.start(now); osc.stop(now+0.26); }
+function playLineClearSound(linesCleared){ if(!audioCtx) return; const now=audioCtx.currentTime; const base=330+(linesCleared-1)*120; const osc=audioCtx.createOscillator(); const gain=audioCtx.createGain(); osc.type='square'; osc.frequency.setValueAtTime(base, now); gain.gain.setValueAtTime(0.0001, now); gain.gain.exponentialRampToValueAtTime(0.18, now+0.02); gain.gain.exponentialRampToValueAtTime(0.001, now+0.4); osc.connect(gain); gain.connect(audioCtx.destination); osc.start(now); osc.stop(now+0.45); }
+
+// musik latar
+let bgm = new Audio("https://cdn.pixabay.com/download/audio/2022/03/10/audio_d1fdf73e48.mp3?filename=retro-game-music-11077.mp3");
+bgm.loop = true; bgm.volume = 0.4;
+
+function drawMatrix(matrix, offset, context, cellSize){
+  for(let y=0;y<matrix.length;y++){
+    for(let x=0;x<matrix[y].length;x++){
+      const val = matrix[y][x];
+      if(val){
+        context.fillStyle = getColor(val);
+        context.fillRect((x+offset.x)*cellSize, (y+offset.y)*cellSize, cellSize-1, cellSize-1);
+        context.strokeStyle = 'rgba(0,0,0,0.2)';
+        context.strokeRect((x+offset.x)*cellSize, (y+offset.y)*cellSize, cellSize-1, cellSize-1);
+      }
     }
-  });
-  highlightCats();
-}
-function highlightCats(){
-  Array.from(document.querySelectorAll('.cat')).forEach(b=>{
-    b.classList.toggle('active', b.textContent === (state.activeCategory==='all'?'Semua':state.activeCategory));
-  });
-}
-
-/* slider */
-const sliderImages = [
-  "https://images.unsplash.com/photo-1512453979798-5ea266f8880c?q=80&w=1600&auto=format&fit=crop&ixlib=rb-4.0.3&s=6a7b8c9d0e1f2a3b",
-  "https://images.unsplash.com/photo-1495121605193-b116b5b09aa9?q=80&w=1600&auto=format&fit=crop&ixlib=rb-4.0.3&s=2b3c4d5e6f7a8b9c",
-  "https://images.unsplash.com/photo-1523275335684-37898b6baf30?q=80&w=1600&auto=format&fit=crop&ixlib=rb-4.0.3&s=1c2d3e4f5a6b7c8d"
-];
-function renderSlider(){
-  const slider = document.getElementById('slider'); slider.innerHTML='';
-  sliderImages.forEach((src,i)=>{
-    const s = document.createElement('div'); s.className = 'slide' + (i===0 ? ' show' : ''); s.style.backgroundImage = `url(${src})`; slider.appendChild(s);
-  });
-  let idx = 0;
-  setInterval(()=> {
-    const slides = slider.querySelectorAll('.slide');
-    slides.forEach((sl,si)=> sl.classList.toggle('show', si===((idx+1)%slides.length)));
-    idx = (idx+1)%slides.length;
-  }, 4500);
-}
-
-/* ===== RENDER GRID ===== */
-function renderGrid(){
-  const grid = document.getElementById('productGrid'); grid.innerHTML = '';
-  let list = state.products.slice();
-
-  // search
-  if(state.search){ const q = state.search.toLowerCase(); list = list.filter(p=> (p.title+' '+p.desc+' '+p.detail+' '+p.shop).toLowerCase().includes(q)); }
-  // category
-  if(state.activeCategory !== 'all') list = list.filter(p=>p.category === state.activeCategory);
-  // price
-  list = list.filter(p=> p.price >= (state.minPrice || 0) && p.price <= (isFinite(state.maxPrice)?state.maxPrice:Infinity));
-  // sort
-  if(state.sort === 'price-asc') list.sort((a,b)=>a.price-b.price);
-  else if(state.sort === 'price-desc') list.sort((a,b)=>b.price-a.price);
-  else list.sort((a,b)=>b.rating - a.rating);
-
-  for(const p of list){
-    const card = document.createElement('article'); card.className='card'; card.tabIndex=0;
-    card.innerHTML = `
-      <div class="media"><img src="${p.images[0]}" alt="${p.title}"></div>
-      <div class="title">${p.title}</div>
-      <div class="shop">${p.shop} • ${p.category}</div>
-      <div style="display:flex;justify-content:space-between;align-items:center">
-        <div class="price">Rp ${format(p.price)}</div>
-        <div style="font-size:12px;color:var(--muted)">${p.rating} ★</div>
-      </div>
-      <div style="display:flex;gap:8px;margin-top:10px">
-        <button class="btn-primary add-btn" data-id="${p.id}">Tambah</button>
-        <button class="btn-ghost preview-btn" data-id="${p.id}">Preview</button>
-      </div>
-    `;
-    card.querySelector('.add-btn').addEventListener('click', (e)=>{ e.stopPropagation(); addToCartById(p.id); });
-    card.querySelector('.preview-btn').addEventListener('click', (e)=>{ e.stopPropagation(); openPreview(p.id); });
-    card.addEventListener('click', ()=> openPreview(p.id));
-    grid.appendChild(card);
   }
 }
 
-/* ===== FILTERS / UI HOOKS ===== */
-document.getElementById('searchInput').addEventListener('input', (e)=>{ state.search = e.target.value; applyFilters(); });
-document.getElementById('applyFilter').addEventListener('click', ()=>{ state.minPrice = Number(document.getElementById('minPrice').value) || 0; const max = Number(document.getElementById('maxPrice').value); state.maxPrice = max>0?max:Infinity; applyFilters(); });
-document.getElementById('resetFilter').addEventListener('click', ()=>{ document.getElementById('minPrice').value=''; document.getElementById('maxPrice').value=''; document.getElementById('filterCategory').value='all'; state.minPrice=0; state.maxPrice=Infinity; state.activeCategory='all'; applyFilters(); highlightCats(); });
-document.getElementById('filterCategory').addEventListener('change', (e)=>{ state.activeCategory = e.target.value; applyFilters(); highlightCats(); });
-document.getElementById('sortSelect').addEventListener('change', (e)=>{ state.sort = e.target.value; applyFilters(); });
-
-function quickFilter(cat){ state.activeCategory = cat; applyFilters(); highlightCats(); }
-function applyFilters(){ renderGrid(); }
-
-/* ===== CART ===== */
-function saveCart(){ localStorage.setItem('fairuz_cart_v1', JSON.stringify(state.cart)); }
-function loadCart(){ state.cart = JSON.parse(localStorage.getItem('fairuz_cart_v1') || '[]'); }
-function addToCartById(id, qty=1){
-  const p = PRODUCTS.find(x=>x.id===id); if(!p) return;
-  const existing = state.cart.find(ci=>ci.id===id);
-  if(existing) existing.qty += qty; else state.cart.push({ id:p.id, title:p.title, price:p.price, img:p.images[0], qty });
-  saveCart(); renderCart(); showCart();
+function merge(arenaRef, piece){
+  piece.matrix.forEach((row,y)=>{
+    row.forEach((value,x)=>{
+      if(value) arenaRef[y+piece.pos.y][x+piece.pos.x] = value;
+    });
+  });
+  playLockSound();
 }
-function renderCart(){
-  const list = document.getElementById('cartList'); list.innerHTML=''; let total=0;
-  for(const it of state.cart){
-    const row = document.createElement('div'); row.className='cart-item';
-    row.innerHTML = `<img src="${it.img}" alt="${it.title}"><div style="flex:1"><div style="font-weight:700">${it.title}</div><div style="color:var(--muted)">Rp ${format(it.price)} x <input type="number" value="${it.qty}" min="1" data-id="${it.id}" style="width:60px;padding:4px;border-radius:6px;border:1px solid rgba(0,0,0,0.06)"></div></div><div><button class="btn-ghost remove" data-id="${it.id}">Hapus</button></div>`;
-    list.appendChild(row);
-    total += it.price * it.qty;
+
+function collide(arenaRef,piece){
+  const m=piece.matrix;
+  for(let y=0;y<m.length;y++){
+    for(let x=0;x<m[y].length;x++){
+      if(m[y][x]){
+        const ay=arenaRef[y+piece.pos.y];
+        if(!ay||ay[x+piece.pos.x]!==0) return true;
+      }
+    }
   }
-  el('cartTotal').textContent = format(total);
-  el('cartCount').textContent = state.cart.reduce((s,i)=>s+i.qty,0);
-  // attach handlers
-  Array.from(document.querySelectorAll('.cart-item input[type=number]')).forEach(inp=>{
-    inp.addEventListener('change', e=>{ const id = Number(e.target.dataset.id); const val = Math.max(1, Number(e.target.value) || 1); const it = state.cart.find(c=>c.id===id); if(it){ it.qty = val; saveCart(); renderCart(); } });
-  });
-  Array.from(document.querySelectorAll('.cart-item .remove')).forEach(btn=>{
-    btn.addEventListener('click', ()=>{ const id = Number(btn.dataset.id); state.cart = state.cart.filter(c=>c.id!==id); saveCart(); renderCart(); });
-  });
+  return false;
 }
-document.getElementById('btnCartToggle').addEventListener('click', ()=> showCart());
-function showCart(){ document.getElementById('cartDrawer').classList.add('open'); }
-function hideCart(){ document.getElementById('cartDrawer').classList.remove('open'); }
-document.getElementById('checkoutBtn').addEventListener('click', ()=>{
-  if(state.cart.length===0){ alert('Keranjang kosong'); return; }
-  const name = prompt('Masukkan nama penerima'); if(!name) return;
-  const addr = prompt('Alamat pengiriman'); if(!addr) return;
-  alert('Pesanan dibuat (mock). Terima kasih, ' + name);
-  state.cart = []; saveCart(); renderCart(); hideCart();
-});
 
-/* ===== PREVIEW & GALLERY ===== */
-const modal = el('modal'), galleryMain = el('galleryMain'), galleryThumbs = el('galleryThumbs');
-function openPreview(id){
-  const p = PRODUCTS.find(x=>x.id===id); if(!p) return;
-  state.preview.product = p; state.preview.idx = 0; renderPreview();
-  modal.classList.add('open'); modal.setAttribute('aria-hidden','false'); document.body.style.overflow='hidden';
-}
-function closePreview(){ modal.classList.remove('open'); modal.setAttribute('aria-hidden','true'); document.body.style.overflow=''; state.preview.product=null; state.preview.idx=0; }
-el('closeModal').addEventListener('click', closePreview);
-modal.addEventListener('click', (e)=>{ if(e.target === modal) closePreview(); });
-
-function renderPreview(){
-  const p = state.preview.product; if(!p) return;
-  galleryMain.innerHTML = ''; const img = document.createElement('img'); img.src = p.images[state.preview.idx] + '&' + Date.now(); img.alt = p.title; galleryMain.appendChild(img);
-  galleryThumbs.innerHTML = '';
-  p.images.forEach((src,i)=>{
-    const t = document.createElement('div'); t.className = 'thumb' + (i===state.preview.idx ? ' active' : '');
-    t.innerHTML = `<img src="${src}">`;
-    t.addEventListener('click', ()=>{ state.preview.idx = i; renderPreview(); });
-    galleryThumbs.appendChild(t);
-  });
-  el('pTitle').textContent = p.title; el('pShop').textContent = p.shop + ' • ' + p.category;
-  el('pRating').innerHTML = '★'.repeat(Math.round(p.rating)) + '☆ <span style="color:var(--muted);font-weight:500;margin-left:8px">' + p.rating.toFixed(1) + ' ('+p.reviews+')</span>';
-  el('pPrice').textContent = 'Rp ' + format(p.price); el('pDesc').textContent = p.desc; el('pDetail').textContent = p.detail;
-  // variants
-  const colorSel = el('variantColor'), sizeSel = el('variantSize'); colorSel.innerHTML=''; sizeSel.innerHTML='';
-  if(p.variants && p.variants.colors && p.variants.colors.length){ p.variants.colors.forEach(c=>{ const o=document.createElement('option'); o.value=o.textContent=c; colorSel.appendChild(o); }); }
-  else { const o=document.createElement('option'); o.value='default'; o.textContent='Default'; colorSel.appendChild(o); }
-  if(p.variants && p.variants.sizes && p.variants.sizes.length){ p.variants.sizes.forEach(s=>{ const o=document.createElement('option'); o.value=o.textContent=s; sizeSel.appendChild(o); }); }
-  else { const o=document.createElement('option'); o.value='default'; o.textContent='Default'; sizeSel.appendChild(o); }
-  el('qtyInput').value = 1;
-}
-el('prevImg').addEventListener('click', ()=>{ const p=state.preview.product; if(!p) return; state.preview.idx = (state.preview.idx -1 + p.images.length) % p.images.length; renderPreview(); });
-el('nextImg').addEventListener('click', ()=>{ const p=state.preview.product; if(!p) return; state.preview.idx = (state.preview.idx +1) % p.images.length; renderPreview(); });
-
-el('qtyInc').addEventListener('click', ()=> el('qtyInput').value = Number(el('qtyInput').value)+1 );
-el('qtyDec').addEventListener('click', ()=> el('qtyInput').value = Math.max(1, Number(el('qtyInput').value)-1) );
-
-el('addCartBtn').addEventListener('click', ()=>{
-  const p = state.preview.product; if(!p) return;
-  const q = Math.max(1, Number(el('qtyInput').value) || 1);
-  const existing = state.cart.find(c=>c.id===p.id);
-  if(existing) existing.qty += q; else state.cart.push({ id:p.id, title:p.title, price:p.price, img:p.images[0], qty:q });
-  saveCart(); renderCart(); closePreview(); showCart();
-});
-el('buyBtn').addEventListener('click', ()=>{ const p = state.preview.product; if(!p) return; const q = Math.max(1, Number(el('qtyInput').value) || 1); alert('Beli cepat (mock): '+p.title+' x'+q); closePreview(); });
-
-/* keyboard nav */
-document.addEventListener('keydown', (e)=>{
-  if(!state.preview.product) return;
-  if(e.key === 'Escape') closePreview();
-  if(e.key === 'ArrowRight'){ const p=state.preview.product; state.preview.idx = (state.preview.idx+1) % p.images.length; renderPreview(); }
-  if(e.key === 'ArrowLeft'){ const p=state.preview.product; state.preview.idx = (state.preview.idx-1 + p.images.length) % p.images.length; renderPreview(); }
-});
-
-/* ===== INIT ===== */
-function init(){
-  renderCategories(); renderSlider(); renderGrid(); loadCart(); renderCart();
-  // preload images (optional)
-  PRODUCTS.forEach(p=>p.images.forEach(src=>{ const i=new Image(); i.src = src; }));
-}
-// load cart from localStorage
-function loadCart(){ state.cart = JSON.parse(localStorage.getItem('fairuz_cart_v1') || '[]'); }
-init();
-
-/* small accessibility: Enter on focused card opens preview */
-document.getElementById('productGrid').addEventListener('keydown', (e)=>{
-  if(e.key === 'Enter' && document.activeElement && document.activeElement.classList.contains('card')){
-    const cards = Array.from(document.querySelectorAll('.card'));
-    const idx = cards.indexOf(document.activeElement);
-    // derive visible products according to current filters
-    let visible = state.products.slice();
-    if(state.search){ const q = state.search.toLowerCase(); visible = visible.filter(p=> (p.title+' '+p.desc).toLowerCase().includes(q)); }
-    if(state.activeCategory !== 'all') visible = visible.filter(p=>p.category === state.activeCategory);
-    if(visible[idx]) openPreview(visible[idx].id);
+function rotate(matrix,dir){
+  for(let y=0;y<matrix.length;y++){
+    for(let x=0;x<y;x++){
+      [matrix[x][y],matrix[y][x]]=[matrix[y][x],matrix[x][y]];
+    }
   }
-});
+  if(dir>0) matrix.forEach(row=>row.reverse()); else matrix.reverse();
+}
+function createPiece(t){ return shapes[t].map(r=>r.slice()); }
 
-/* keep cart UI updated after load */
-renderCart();
+const player={pos:{x:0,y:0},matrix:null};
+let nextPiece={matrix:createPiece(pieces[Math.floor(Math.random()*pieces.length)])};
+
+function showOverlay(title,msg){overlayTitle.innerText=title;overlayMsg.innerText=msg;overlay.style.display='flex';}
+function hideOverlay(){overlay.style.display='none';}
+
+function spawnNext(){
+  player.matrix=nextPiece.matrix.map(r=>r.slice());
+  player.pos.y=0; player.pos.x=Math.floor((COLS-player.matrix[0].length)/2);
+  nextPiece.matrix=createPiece(pieces[Math.floor(Math.random()*pieces.length)]);
+  if(collide(arena,player)){ stopGame(); showOverlay('Game Over','Area penuh — permainan selesai. Tekan Restart untuk bermain lagi.'); }
+}
+
+// efek partikel
+let particleEffects=[];
+function createParticles(y){
+  const particles=[];
+  for(let i=0;i<30;i++){
+    particles.push({
+      x:Math.random()*canvas.width,
+      y:y*scale,
+      vx:(Math.random()-0.5)*4,
+      vy:(Math.random()-1.5)*3,
+      life:Math.random()*40+20
+    });
+  }
+  particleEffects.push(...particles);
+}
+function updateParticles(){
+  particleEffects=particleEffects.filter(p=>p.life>0);
+  particleEffects.forEach(p=>{
+    p.x+=p.vx; p.y+=p.vy; p.vy+=0.1; p.life--;
+    ctx.fillStyle=`rgba(0,200,255,${p.life/60})`;
+    ctx.fillRect(p.x,p.y,3,3);
+  });
+}
+
+function sweepLines(){
+  let rowCount=0;
+  outer: for(let y=arena.length-1;y>=0;y--){
+    for(let x=0;x<arena[y].length;x++){
+      if(arena[y][x]===0) continue outer;
+    }
+    const row=arena.splice(y,1)[0].fill(0);
+    arena.unshift(row);
+    createParticles(y);
+    y++;
+    rowCount++;
+  }
+  if(rowCount>0){
+    const points=[0,40,100,300,1200];
+    score+=points[rowCount]*level;
+    lines+=rowCount;
+    level=Math.floor(lines/10)+1;
+    updateStats();
+    playLineClearSound(rowCount);
+  }
+  return rowCount;
+}
+
+// skor
+const STORAGE_KEY='tetris_highscore_v1';
+let score=0,lines=0,level=1,highscore=0;
+function loadHighscore(){try{const v=parseInt(localStorage.getItem(STORAGE_KEY)||'0',10);if(!isNaN(v))highscore=v;}catch(e){highscore=0;}document.getElementById('highscore').innerText=highscore;}
+function saveHighscore(){try{localStorage.setItem(STORAGE_KEY,String(highscore));}catch(e){}document.getElementById('highscore').innerText=highscore;}
+function updateStats(){document.getElementById('score').innerText=score;document.getElementById('level').innerText=level;document.getElementById('lines').innerText=lines;if(score>highscore){highscore=score;saveHighscore();}}
+
+// loop
+let dropCounter=0,dropInterval=1000,lastTime=0,paused=false,running=false,challengeTimer=0;
+
+function update(time=0){
+  if(!running) return;
+  if(paused){ lastTime=time; requestAnimationFrame(update); return; }
+  const delta=time-lastTime; lastTime=time;
+  dropCounter+=delta; challengeTimer+=delta;
+  dropInterval=Math.max(100,1000-(level-1)*75);
+
+  if(dropCounter>dropInterval){
+    player.pos.y++;
+    if(collide(arena,player)){ player.pos.y--; merge(arena,player); sweepLines(); spawnNext(); }
+    dropCounter=0;
+  }
+
+  if(challengeTimer>15000 && level>=3){
+    challengeTimer=0;
+    const newRow=new Array(COLS).fill(0).map(()=>Math.random()<0.2?0:Math.ceil(Math.random()*7));
+    arena.push(newRow); arena.shift();
+  }
+
+  draw();
+  requestAnimationFrame(update);
+}
+
+function draw(){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  nctx.clearRect(0,0,nextCanvas.width,nextCanvas.height);
+  drawMatrix(arena,{x:0,y:0},ctx,scale);
+  if(player.matrix) drawMatrix(player.matrix,player.pos,ctx,scale);
+  updateParticles();
+  const nextMatrix=nextPiece.matrix;
+  const nx=Math.floor((4-nextMatrix[0].length)/2);
+  drawMatrix(nextMatrix,{x:nx,y:1},nctx,28);
+}
+
+function startGame(){
+  arena=createMatrix(COLS,ROWS);
+  score=0;lines=0;level=1;dropCounter=0;paused=false;
+  hideOverlay(); loadHighscore(); spawnNext(); updateStats();
+  if(!running){ running=true; requestAnimationFrame(update); }
+}
+function stopGame(){ running=false; }
+
+function handleKey(e){
+  if(!running) return;
+  if(!audioCtx) ensureAudio();
+  if(e.key==='ArrowLeft'){ player.pos.x--; if(collide(arena,player)) player.pos.x++; }
+  else if(e.key==='ArrowRight'){ player.pos.x++; if(collide(arena,player)) player.pos.x--; }
+  else if(e.key==='ArrowDown'){ player.pos.y++; if(collide(arena,player)){ player.pos.y--; merge(arena,player); sweepLines(); spawnNext(); } dropCounter=0; }
+  else if(e.key==='ArrowUp'){ rotate(player.matrix,1); if(collide(arena,player)) rotate(player.matrix,-1); }
+  else if(e.code==='Space'){ e.preventDefault(); while(!collide(arena,player)) player.pos.y++; player.pos.y--; merge(arena,player); sweepLines(); spawnNext(); dropCounter=0; }
+  else if(e.key==='p'||e.key==='P'){ paused=!paused; }
+  else if(e.key==='Shift'){ dropCounter+=dropInterval; } // turbo
+}
+
+document.addEventListener('keydown',handleKey);
+document.getElementById('btn-left').onclick=()=>handleKey({key:'ArrowLeft'});
+document.getElementById('btn-right').onclick=()=>handleKey({key:'ArrowRight'});
+document.getElementById('btn-down').onclick=()=>handleKey({key:'ArrowDown'});
+document.getElementById('btn-rotate').onclick=()=>handleKey({key:'ArrowUp'});
+document.getElementById('btn-drop').onclick=()=>handleKey({code:'Space'});
+document.getElementById('btn-pause').onclick=()=>{paused=!paused;};
+document.getElementById('btn-restart').onclick=startGame;
+overlayRestart.onclick=startGame;
+overlayClose.onclick=()=>overlay.style.display='none';
+
+document.getElementById('btn-music').onclick=()=>{
+  if(bgm.paused){ ensureAudio(); bgm.play(); } else bgm.pause();
+};
+
+loadHighscore(); startGame();
 </script>
 </body>
 </html>
