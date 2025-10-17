@@ -1,72 +1,725 @@
 <!doctype html>
 <html lang="id">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>TETRIS 3D — Sunset Cyberpunk</title>
-
-  <!-- Three.js via CDN -->
-  <script src="https://cdn.jsdelivr.net/npm/three@0.161.0/build/three.min.js"></script>
-
-  <!-- App CSS -->
-  <link rel="stylesheet" href="css/styles.css">
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>TETRIS 3D — Sunset Cyberpunk (Full)</title>
+<!-- Three.js -->
+<script src="https://cdn.jsdelivr.net/npm/three@0.161.0/build/three.min.js"></script>
+<style>
+  :root{
+    --bg:#06030a; --accent1:#ff7a2d; --accent2:#ff4fb8; --muted:#9fb0c7;
+    --glass: rgba(255,255,255,0.03);
+  }
+  html,body{height:100%;margin:0;background:linear-gradient(180deg,#080216,#03020a);font-family:Inter,system-ui,Arial;color:#eaf6ff}
+  .app{display:flex;flex-direction:column;height:100vh;padding:14px;gap:12px;box-sizing:border-box}
+  header{display:flex;align-items:center;gap:12px}
+  h1{margin:0;font-weight:700;color:var(--accent1);text-shadow:0 0 8px rgba(255,79,184,0.12)}
+  .controls-top{margin-left:auto;display:flex;gap:8px;align-items:center}
+  button, .btn{background:linear-gradient(180deg,rgba(255,255,255,0.02),transparent);border:1px solid rgba(255,255,255,0.04);padding:8px 10px;border-radius:8px;color:#eaf6ff;cursor:pointer}
+  main{display:grid;grid-template-columns:1fr 420px;gap:12px;align-items:start;flex:1;min-height:0}
+  /* left column: 3D viewport + AI mini */
+  #left-col{display:flex;flex-direction:column;gap:12px;min-height:0}
+  #viewport{border-radius:12px;overflow:hidden;border:1px solid rgba(255,255,255,0.03);background:#02030a;position:relative;height:640px}
+  #overlayUI{position:absolute;left:14px;top:14px;z-index:5;display:flex;flex-direction:column;gap:8px}
+  .card{background:linear-gradient(180deg,rgba(255,255,255,0.02),transparent);padding:8px;border-radius:10px;border:1px solid rgba(255,255,255,0.03)}
+  #ai-mini{width:220px;height:320px;border-radius:10px;border:1px solid rgba(255,255,255,0.03);background:#07101a}
+  /* right column: HUD */
+  #hud{display:flex;flex-direction:column;gap:12px;height:640px;overflow:auto}
+  .panel{background:linear-gradient(180deg,rgba(255,255,255,0.02),transparent);padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,0.03)}
+  .stats{display:flex;gap:10px;align-items:center}
+  .stat{flex:1;background:rgba(255,255,255,0.01);padding:8px;border-radius:8px;text-align:center}
+  canvas.mini{width:112px;height:112px;border-radius:8px;background:#011018;border:1px solid rgba(255,255,255,0.03)}
+  input[type=range]{width:100%}
+  .shop-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+  .shop-item{padding:8px;border-radius:8px;background:linear-gradient(180deg,rgba(255,255,255,0.01),transparent);border:1px solid rgba(255,255,255,0.02)}
+  .leaderboard{max-height:180px;overflow:auto;margin-top:8px}
+  footer{color:var(--muted);text-align:center;margin-top:8px;font-size:13px}
+  @media (max-width:1100px){ main{grid-template-columns:1fr} #hud{height:auto} #viewport{height:520px} }
+</style>
 </head>
 <body>
-  <div id="app">
-    <header>
-      <h1>TETRIS 3D — Sunset Cyberpunk</h1>
-      <div class="controls-top">
-        <button id="btn-play" class="btn">Play</button>
-        <button id="btn-pause" class="btn">Pause</button>
-        <button id="btn-ai" class="btn">AI: Off</button>
-        <button id="btn-shop" class="btn">Shop</button>
+<div class="app">
+  <header>
+    <h1>TETRIS 3D — Sunset Cyberpunk</h1>
+    <div class="controls-top">
+      <button id="btn-play" class="btn">Play</button>
+      <button id="btn-pause" class="btn">Pause</button>
+      <button id="btn-restart" class="btn">Restart</button>
+      <button id="btn-ai-toggle" class="btn">AI: Off</button>
+      <button id="btn-shop" class="btn">Shop</button>
+    </div>
+  </header>
+
+  <main>
+    <div id="left-col">
+      <section id="viewport"></section>
+
+      <div style="display:flex;gap:12px;align-items:flex-start">
+        <div class="card">
+          <div style="font-weight:700;margin-bottom:6px">AI Opponent</div>
+          <canvas id="ai-mini" width="220" height="320"></canvas>
+          <div style="margin-top:8px">AI Skor: <span id="ai-score">0</span></div>
+        </div>
+
+        <div class="card" style="flex:1">
+          <div style="font-weight:700">Info</div>
+          <div class="small" style="color:var(--muted);margin-top:6px">Klik Play untuk memulai. Kontrol: ← → (geser), ↑ (rotasi), ↓ (soft drop), Space (hard drop), C (hold), P (pause), Shift (turbo).</div>
+        </div>
       </div>
-    </header>
+    </div>
 
-    <main>
-      <section id="viewport" aria-label="3D game viewport"></section>
+    <aside id="hud">
+      <div class="panel">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div>
+            <div class="stats">
+              <div class="stat"><div class="small">Skor</div><div id="score" style="font-weight:700">0</div></div>
+              <div class="stat"><div class="small">Level</div><div id="level" style="font-weight:700">1</div></div>
+              <div class="stat"><div class="small">Baris</div><div id="lines" style="font-weight:700">0</div></div>
+            </div>
+            <div style="margin-top:8px;color:var(--muted)">Coins: <span id="coins">0</span></div>
+          </div>
+          <div style="text-align:center">
+            <div class="small">Next</div>
+            <canvas id="next" class="mini" width="112" height="112"></canvas>
+            <div style="height:8px"></div>
+            <div class="small">Hold</div>
+            <canvas id="hold" class="mini" width="112" height="112"></canvas>
+          </div>
+        </div>
+      </div>
 
-      <aside id="hud">
-        <div class="panel">
-          <div>Skor: <span id="score">0</span></div>
-          <div>Level: <span id="level">1</span></div>
-          <div>Baris: <span id="lines">0</span></div>
-          <div>Coins: <span id="coins">0</span></div>
+      <div class="panel">
+        <div style="display:flex;gap:8px;align-items:center">
+          <label style="flex:1">Volume <input id="vol" type="range" min="0" max="1" step="0.01" value="0.45"></label>
+          <button id="btn-music" class="btn">🎵 Music</button>
         </div>
 
-        <div class="panel">
-          <div>Next</div>
-          <canvas id="next" width="112" height="112" class="mini"></canvas>
-          <div>Hold</div>
-          <canvas id="hold" width="112" height="112" class="mini"></canvas>
+        <div style="margin-top:10px">
+          <div style="font-weight:700">Power-ups</div>
+          <div style="display:flex;gap:8px;margin-top:8px">
+            <button id="power-freeze" class="btn">Freeze (10c)</button>
+            <button id="power-bomb" class="btn">Bomb (15c)</button>
+            <button id="power-clear" class="btn">Clear (12c)</button>
+          </div>
         </div>
+      </div>
 
-        <div class="panel">
-          <label>Volume <input id="vol" type="range" min="0" max="1" step="0.01" value="0.45"></label>
+      <div class="panel">
+        <div style="display:flex;gap:8px;align-items:center">
+          <input id="playerName" placeholder="Nama (max 12)" maxlength="12" style="flex:1;padding:8px;border-radius:8px;background:transparent;border:1px solid rgba(255,255,255,0.03);color:#eaf6ff">
+          <button id="btn-save" class="btn">Simpan</button>
         </div>
-
-        <div class="panel">
-          <input id="playerName" maxlength="12" placeholder="Nama (max 12)">
-          <button id="btn-save" class="btn">Simpan Skor</button>
-        </div>
-
-        <div class="panel">
-          <h4>Leaderboard</h4>
-          <div id="leaderboard" class="leaderboard"></div>
+        <div class="leaderboard" id="leaderboard"></div>
+        <div style="display:flex;gap:8px;margin-top:8px">
           <button id="btn-clear-lb" class="btn">Clear LB</button>
+          <button id="btn-export" class="btn">Export</button>
         </div>
-      </aside>
-    </main>
+      </div>
 
-    <footer>
-      <small>Built 2025 — Tetris 3D • Sunset Cyberpunk</small>
-    </footer>
-  </div>
+      <div class="panel">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div style="font-weight:700">Shop</div>
+          <div class="small" style="color:var(--muted)">Coins: <span id="coins2">0</span></div>
+        </div>
+        <div class="shop-grid" id="shop-grid"></div>
+      </div>
+    </aside>
+  </main>
 
-  <!-- JS modules -->
-  <script src="js/three-init.js"></script>
-  <script src="js/audio.js"></script>
-  <script src="js/game-core.js"></script>
-  <script src="js/ui.js"></script>
+  <footer>Built 2025 — Tetris 3D • Sunset Cyberpunk — Ekskul Coding</footer>
+</div>
+
+<!-- modal shop simple -->
+<div id="modal-shop" style="position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);min-width:360px;background:#041022;padding:14px;border-radius:10px;border:1px solid rgba(255,255,255,0.04);display:none;z-index:9999">
+  <h3 style="margin:0 0 8px 0;color:var(--accent2)">Shop</h3>
+  <div id="shop-modal-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:8px"></div>
+  <div style="text-align:right;margin-top:10px"><button id="shop-close" class="btn">Tutup</button></div>
+</div>
+
+<script>
+/* ===========================
+   TETRIS 3D — All-in-one JS
+   Modular IIFE blocks (like separated files)
+   =========================== */
+
+/* ---------- COMMON UTIL & STATE ---------- */
+const STATE = {
+  COLS:10, ROWS:20,
+  CELL:1,
+  DROP_BASE:1000,
+  theme: localStorage.getItem('t3_theme') || 'sunset',
+  coins: parseInt(localStorage.getItem('t3_coins')||'0',10) || 0,
+  leaderboardKey: 'tetris3d_lb',
+  highKey: 'tetris3d_high',
+};
+
+/* ---------- AUDIO MODULE ---------- */
+const AudioModule = (function(){
+  let music=null, sfx={};
+  let enabled=false;
+  function init(){
+    if(music) return;
+    try{
+      music = new Audio('https://cdn.pixabay.com/download/audio/2022/03/10/audio_d1fdf73e48.mp3?filename=retro-game-music-11077.mp3');
+      music.loop = true; music.volume = parseFloat(document.getElementById('vol').value||0.45);
+      sfx.clear = new Audio('https://cdn.pixabay.com/download/audio/2022/03/31/audio_9e4b05a6cd.mp3?filename=line-clear.mp3');
+      sfx.drop = new Audio('https://cdn.pixabay.com/download/audio/2022/03/23/audio_13b1a4f0fd.mp3?filename=small-foley-5708.mp3');
+      sfx.power = new Audio('https://cdn.pixabay.com/download/audio/2022/03/24/audio_8b4d1a0a3a.mp3?filename=power-up-12403.mp3');
+      Object.values(sfx).forEach(a=>a&&(a.volume=music.volume));
+      enabled=true;
+    }catch(e){ console.warn('Audio init failed', e); }
+  }
+  function setVolume(v){
+    if(music) music.volume = v;
+    Object.values(sfx).forEach(a=>a&&(a.volume=v));
+  }
+  function play(name){
+    if(!enabled) return;
+    try{ if(name==='clear' && sfx.clear){ sfx.clear.currentTime=0; sfx.clear.play(); }
+          if(name==='drop' && sfx.drop){ sfx.drop.currentTime=0; sfx.drop.play(); }
+          if(name==='power' && sfx.power){ sfx.power.currentTime=0; sfx.power.play(); } }catch(e){}
+  }
+  function toggleMusic(on){
+    if(!music) init();
+    if(on){ music.play().catch(()=>{}); } else { music.pause(); }
+  }
+  return { init, setVolume, play, toggleMusic };
+})();
+
+/* ---------- THREE INIT MODULE ---------- */
+const ThreeModule = (function(){
+  const container = document.getElementById('viewport');
+  const renderer = new THREE.WebGLRenderer({antialias:true,alpha:true});
+  renderer.setSize(container.clientWidth, container.clientHeight);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+  container.appendChild(renderer.domElement);
+
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(50, container.clientWidth/container.clientHeight, 0.1, 1000);
+  camera.position.set(0,12,26);
+  camera.lookAt(0,6,0);
+
+  const dirLight = new THREE.DirectionalLight(0xffffff,0.9);
+  dirLight.position.set(10,20,10);
+  scene.add(dirLight);
+  scene.add(new THREE.AmbientLight(0xffffff,0.25));
+
+  const boardGroup = new THREE.Group();
+  boardGroup.position.set(-STATE.COLS/2 + 0.5, 0, 0);
+  scene.add(boardGroup);
+
+  const bgGeo = new THREE.PlaneGeometry(120,80);
+  const bgMat = new THREE.MeshBasicMaterial({ color: 0x04030a });
+  const bgMesh = new THREE.Mesh(bgGeo,bgMat);
+  bgMesh.position.set(0,10,-60);
+  scene.add(bgMesh);
+
+  window.addEventListener('resize', ()=> {
+    const w = container.clientWidth, h = container.clientHeight;
+    renderer.setSize(w,h);
+    camera.aspect = w/h;
+    camera.updateProjectionMatrix();
+  });
+
+  function render(){
+    // cinematic slow orbiting camera slight movement
+    const t = performance.now() * 0.0002;
+    camera.position.x = Math.sin(t) * 6;
+    camera.position.z = 18 + Math.cos(t)*2;
+    camera.lookAt(0,6,0);
+    boardGroup.rotation.y = Math.sin(t*0.5) * 0.04;
+    renderer.render(scene,camera);
+  }
+
+  return { scene, camera, renderer, boardGroup, render };
+})();
+
+/* ---------- GAME CORE MODULE (Player) ---------- */
+const GameCore = (function(){
+  const COLS = STATE.COLS, ROWS = STATE.ROWS;
+  const COLORS = [null,'#ff7a2d','#ff4fb8','#ffd166','#7cffb2','#ff6b6b','#ff8fb1','#ffffff'];
+  const SHAPES = {
+    I:[[0,0,0,0],[1,1,1,1],[0,0,0,0],[0,0,0,0]],
+    O:[[2,2],[2,2]],
+    T:[[0,3,0],[3,3,3],[0,0,0]],
+    S:[[0,4,4],[4,4,0],[0,0,0]],
+    Z:[[5,5,0],[0,5,5],[0,0,0]],
+    J:[[6,0,0],[6,6,6],[0,0,0]],
+    L:[[0,0,7],[7,7,7],[0,0,0]]
+  };
+  const KEYS = Object.keys(SHAPES);
+
+  // state
+  let arena = createMatrix(COLS, ROWS);
+  let current = null;
+  let nextQueue = [];
+  let hold = null;
+  let canHold = true;
+  let activeGroup = null;
+  let meshGrid = createMatrix(COLS, ROWS);
+  let dropCounter = 0;
+  let dropInterval = STATE.DROP_BASE;
+  let score = 0, lines = 0, level = 1;
+  let running = false, paused=true;
+
+  // helpers
+  function createMatrix(w,h){ const m=[]; for(let y=0;y<h;y++) m.push(new Array(w).fill(0)); return m; }
+  function randPiece(){ const k = KEYS[Math.floor(Math.random()*KEYS.length)]; return SHAPES[k].map(r=>r.slice()); }
+  function refillQueue(){ while(nextQueue.length < 6) nextQueue.push(randPiece()); }
+  function collide(arenaRef, piece){
+    const m = piece.matrix;
+    for(let y=0;y<m.length;y++) for(let x=0;x<m[y].length;x++){
+      if(m[y][x]){
+        const ay = arenaRef[piece.y + y];
+        if(!ay || ay[piece.x + x] !== 0) return true;
+      }
+    }
+    return false;
+  }
+  function merge(arenaRef, piece){
+    piece.matrix.forEach((row,y)=>row.forEach((v,x)=>{ if(v) arenaRef[piece.y+y][piece.x+x]=v; }));
+  }
+  function rotate(m,dir){ for(let y=0;y<m.length;y++) for(let x=0;x<y;x++) [m[x][y],m[y][x]]=[m[y][x],m[x][y]]; if(dir>0) m.forEach(r=>r.reverse()); else m.reverse(); }
+
+  // visuals
+  function createCube(color){
+    const geo = new THREE.BoxGeometry(1,1,1);
+    const mat = new THREE.MeshStandardMaterial({ color, roughness:0.4, metalness:0.15, emissive: color, emissiveIntensity:0.02 });
+    return new THREE.Mesh(geo,mat);
+  }
+  function rebuildMeshes(){
+    // clear existing
+    for(let y=0;y<ROWS;y++){
+      for(let x=0;x<COLS;x++){
+        if(meshGrid[y][x]){ ThreeModule.boardGroup.remove(meshGrid[y][x]); if(meshGrid[y][x].geometry) meshGrid[y][x].geometry.dispose(); if(meshGrid[y][x].material) meshGrid[y][x].material.dispose(); meshGrid[y][x] = null; }
+      }
+    }
+    for(let y=0;y<ROWS;y++){
+      for(let x=0;x<COLS;x++){
+        const val = arena[y][x];
+        if(val){
+          const cube = createCube(COLORS[val]);
+          cube.position.set(x + 0.5, (ROWS - 1 - y) + 0.5, 0);
+          ThreeModule.boardGroup.add(cube);
+          meshGrid[y][x] = cube;
+        }
+      }
+    }
+  }
+  function createActiveGroup(piece){
+    if(activeGroup){ ThreeModule.scene.remove(activeGroup); activeGroup = null; }
+    const g = new THREE.Group();
+    piece.matrix.forEach((row,y)=>row.forEach((v,x)=>{ if(v){ const c = createCube(COLORS[v]); c.position.set(x+0.5, -y+0.5, 0); g.add(c); } }));
+    activeGroup = g; ThreeModule.scene.add(g); placeActiveGroup(piece);
+  }
+  function placeActiveGroup(piece){ if(!activeGroup) return; activeGroup.position.set(piece.x, (ROWS - 1 - piece.y), 0); }
+
+  // gameplay
+  function spawn(){
+    refillQueue();
+    const mat = nextQueue.shift();
+    current = { matrix: mat, x: Math.floor((COLS - mat[0].length)/2), y: 0 };
+    canHold = true;
+    createActiveGroup(current);
+    drawMini(nextQueue[0], document.getElementById('next').getContext('2d'));
+    if(collide(arena, current)){
+      running = false; paused=true;
+      alert(`Game Over\nSkor: ${score}`);
+    }
+  }
+  function sweep(){
+    let cleared = 0;
+    for(let y=ROWS-1;y>=0;y--){
+      if(arena[y].every(v=>v!==0)){
+        arena.splice(y,1);
+        arena.unshift(new Array(COLS).fill(0));
+        cleared++; y++;
+      }
+    }
+    if(cleared>0){
+      const points = [0,40,100,300,1200];
+      score += (points[cleared] || cleared*100) * level;
+      lines += cleared;
+      level = Math.floor(lines/10) + 1;
+      dropInterval = Math.max(80, STATE.DROP_BASE - (level-1)*70);
+      STATE.coins += cleared * 5;
+      localStorage.setItem('t3_coins', String(STATE.coins));
+      AudioModule.play('clear');
+      rebuildMeshes();
+      updateHUD();
+    }
+  }
+
+  function drop(){
+    current.y++;
+    if(collide(arena,current)){
+      current.y--;
+      merge(arena, current);
+      rebuildMeshes();
+      sweep();
+      spawn();
+    }
+    placeActiveGroup(current);
+  }
+  function hardDrop(){
+    while(!collide(arena,current)) current.y++;
+    current.y--;
+    merge(arena, current);
+    rebuildMeshes();
+    sweep();
+    spawn();
+    AudioModule.play('drop');
+  }
+  function holdPiece(){
+    if(!canHold) return;
+    if(!hold){ hold = current.matrix.map(r=>r.slice()); ThreeModule.scene.remove(activeGroup); spawn(); }
+    else { const tmp = current.matrix.map(r=>r.slice()); current.matrix = hold.map(r=>r.slice()); hold = tmp; current.x = Math.floor((COLS - current.matrix[0].length)/2); current.y = 0; createActiveGroup(current); }
+    canHold = false; drawMini(hold, document.getElementById('hold').getContext('2d'));
+  }
+
+  // draw mini function
+  function drawMini(matrix, ctx){
+    ctx.clearRect(0,0,ctx.canvas.width,ctx.canvas.height);
+    ctx.fillStyle = '#020610';
+    ctx.fillRect(0,0,ctx.canvas.width,ctx.canvas.height);
+    if(!matrix) return;
+    const cell = Math.floor(Math.min(ctx.canvas.width/4, ctx.canvas.height/4) - 6);
+    const w = matrix[0].length, h = matrix.length;
+    const offX = Math.floor((4 - w)/2), offY = Math.floor((4 - h)/2);
+    for(let y=0;y<4;y++){
+      for(let x=0;x<4;x++){
+        const mx = x - offX, my = y - offY;
+        let val = 0;
+        if(my>=0 && my<h && mx>=0 && mx<w) val = matrix[my][mx];
+        if(val){
+          ctx.fillStyle = COLORS[val];
+          ctx.fillRect(x*cell + 8, y*cell + 8, cell-6, cell-6);
+          ctx.strokeStyle = 'rgba(0,0,0,0.2)';
+          ctx.strokeRect(x*cell + 8, y*cell + 8, cell-6, cell-6);
+        }
+      }
+    }
+  }
+
+  // update HUD
+  function updateHUD(){
+    document.getElementById('score').textContent = score;
+    document.getElementById('level').textContent = level;
+    document.getElementById('lines').textContent = lines;
+    document.getElementById('coins').textContent = STATE.coins;
+    document.getElementById('coins2').textContent = STATE.coins;
+  }
+
+  // public API
+  function start(){
+    if(!running){ running = true; paused = false; dropCounter = 0; dropInterval = STATE.DROP_BASE; arena = createMatrix(COLS, ROWS); score=0; lines=0; level=1; nextQueue=[]; refillQueue(); spawn(); rebuildMeshes(); updateHUD(); }
+  }
+  function pause(){ paused = !paused; if(paused) { /*pause music*/ } else { /*resume*/ } }
+  function step(time, dt){
+    if(!running) return;
+    if(!paused){
+      dropCounter += dt;
+      if(dropCounter > dropInterval){ drop(); dropCounter = 0; }
+    }
+  }
+  function getState(){ return { score, lines, level, coins: STATE.coins, running, paused }; }
+
+  // key controls (wired later in UI module)
+  return { start, pause, step, hardDrop, holdPiece, rotate, collide, arena, createActiveGroup, rebuildMeshes, drawMini, getState, spawn, updateHUD, hardDrop, merge, setCurrent: (c)=>{ current=c; createActiveGroup(current); } };
+})();
+
+/* ---------- AI MODULE (competes on separate invisible arena, displayed in mini canvas) ---------- */
+const AIModule = (function(){
+  // We'll implement a separate simple tetris simulation (same rules) that runs automatically and displays on ai-mini canvas.
+  const COLS = STATE.COLS, ROWS = STATE.ROWS;
+  const canvas = document.getElementById('ai-mini');
+  const ctx = canvas.getContext('2d');
+  const SHAPES = {
+    I:[[0,0,0,0],[1,1,1,1],[0,0,0,0],[0,0,0,0]],
+    O:[[2,2],[2,2]],
+    T:[[0,3,0],[3,3,3],[0,0,0]],
+    S:[[0,4,4],[4,4,0],[0,0,0]],
+    Z:[[5,5,0],[0,5,5],[0,0,0]],
+    J:[[6,0,0],[6,6,6],[0,0,0]],
+    L:[[0,0,7],[7,7,7],[0,0,0]]
+  };
+  const SH_KEYS = Object.keys(SHAPES);
+  const COLORS = [null,'#ff7a2d','#ff4fb8','#ffd166','#7cffb2','#ff6b6b','#ff8fb1','#ffffff'];
+  let arena = create(10,20);
+  let piece = null;
+  let nextQueue = [];
+  let score = 0;
+  let dropInterval = 600, dropCounter = 0;
+  let running = false;
+
+  function create(w,h){ const m=[]; for(let y=0;y<h;y++) m.push(new Array(w).fill(0)); return m; }
+  function clone(mat){ return mat.map(r=>r.slice()); }
+  function randPiece(){ return SHAPES[SH_KEYS[Math.floor(Math.random()*SH_KEYS.length)]].map(r=>r.slice()); }
+  function refill(){ while(nextQueue.length < 5) nextQueue.push(randPiece()); }
+  function spawn(){ refill(); piece = { matrix: nextQueue.shift(), x:3, y:0 }; if(collide(arena,piece)){ running = false; } }
+  function collide(arenaRef, piece){ const m=piece.matrix; for(let y=0;y<m.length;y++) for(let x=0;x<m[y].length;x++) if(m[y][x]){ const ay = arenaRef[piece.y + y]; if(!ay || ay[piece.x + x] !== 0) return true; } return false; }
+  function merge(){ piece.matrix.forEach((r,y)=>r.forEach((v,x)=>{ if(v) arena[piece.y+y][piece.x+x] = v; })); }
+  function sweep(){
+    for(let y=ROWS-1;y>=0;y--) if(arena[y].every(v=>v)){ arena.splice(y,1); arena.unshift(new Array(COLS).fill(0)); score+=100; y++; }
+  }
+  function rotate(m,dir){ for(let y=0;y<m.length;y++) for(let x=0;x<y;x++) [m[x][y],m[y][x]]=[m[y][x],m[x][y]]; if(dir>0) m.forEach(r=>r.reverse()); else m.reverse(); }
+  function step(dt){
+    if(!running) return;
+    dropCounter += dt;
+    if(dropCounter > dropInterval){
+      piece.y++;
+      if(collide(arena,piece)){ piece.y--; merge(); sweep(); spawn(); }
+      dropCounter = 0;
+      aiDecide();
+    }
+  }
+  function aiDecide(){
+    // very simple heuristic: try each x & rotation, pick lowest aggregate height
+    let best = null;
+    const orig = { matrix: clone(piece.matrix), x: piece.x, y: piece.y };
+    for(let r=0;r<4;r++){
+      const testMat = clone(orig.matrix);
+      for(let t=0;t<r;t++) rotate(testMat,1);
+      const w = testMat[0].length;
+      for(let xPos = -1; xPos <= COLS - w + 1; xPos++){
+        const tp = { matrix: testMat.map(r=>r.slice()), x: xPos, y: 0 };
+        // drop
+        while(!collide(arena,tp)) tp.y++;
+        tp.y--;
+        if(tp.y < 0) continue;
+        // simulate merge
+        const copy = arena.map(r=>r.slice());
+        for(let y=0;y<tp.matrix.length;y++) for(let x=0;x<tp.matrix[y].length;x++) if(tp.matrix[y][x]) copy[tp.y+y][tp.x+x]=1;
+        // score aggregated heights
+        let agg = 0;
+        for(let c=0;c<COLS;c++){
+          let h = 0;
+          for(let r2=0;r2<ROWS;r2++){ if(copy[r2][c]){ h = ROWS - r2; break; } }
+          agg += h;
+        }
+        if(!best || agg < best.score){ best = {score:agg, rot:r, x:xPos}; }
+      }
+    }
+    if(best){
+      for(let t=0;t<best.rot;t++) rotate(piece.matrix,1);
+      if(best.x > piece.x) piece.x++;
+      else if(best.x < piece.x) piece.x--;
+      else { /* aligned, let drop handle */ }
+    }
+  }
+
+  function render(){
+    // draw simple 10x20 small grid
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    ctx.fillStyle = '#041018'; ctx.fillRect(0,0,canvas.width,canvas.height);
+    const cellW = canvas.width / COLS, cellH = canvas.height / ROWS;
+    for(let y=0;y<ROWS;y++) for(let x=0;x<COLS;x++){
+      if(arena[y][x]){ ctx.fillStyle = COLORS[arena[y][x]]; ctx.fillRect(x*cellW, y*cellH, cellW-1, cellH-1); }
+    }
+    if(piece) for(let y=0;y<piece.matrix.length;y++) for(let x=0;x<piece.matrix[y].length;x++) if(piece.matrix[y][x]){
+      const px = (piece.x + x) * cellW, py = (piece.y + y) * cellH;
+      ctx.fillStyle = COLORS[piece.matrix[y][x]]; ctx.fillRect(px, py, cellW-1, cellH-1);
+    }
+    document.getElementById('ai-score').textContent = score;
+  }
+
+  function start(){ arena = create(COLS,ROWS); nextQueue=[]; refill(); spawn(); score = 0; running = true; }
+  function stop(){ running = false; }
+  function getScore(){ return score; }
+
+  return { start, stop, step, render, getScore, spawn };
+})();
+
+/* ---------- SHOP MODULE ---------- */
+const ShopModule = (function(){
+  const items = [
+    { id:'theme-nebula', label:'Nebula Theme', price:80, type:'theme' },
+    { id:'theme-aurora', label:'Aurora Theme', price:120, type:'theme' },
+    { id:'perm-freeze', label:'Permanent Freeze', price:150, type:'power' },
+  ];
+  function render(){
+    const grid = document.getElementById('shop-grid');
+    grid.innerHTML = '';
+    items.forEach(it=>{
+      const el = document.createElement('div'); el.className='shop-item';
+      el.innerHTML = `<div style="font-weight:600">${it.label}</div><div class="small">Price: ${it.price} coins</div><div style="margin-top:6px"><button class="btn buy" data-id="${it.id}">Buy</button></div>`;
+      grid.appendChild(el);
+    });
+    // modal grid
+    const modalGrid = document.getElementById('shop-modal-grid');
+    modalGrid.innerHTML = '';
+    items.forEach(it=>{
+      const d = document.createElement('div'); d.style.padding='8px'; d.style.borderRadius='8px'; d.style.background='linear-gradient(180deg, rgba(255,255,255,0.01), transparent)';
+      d.innerHTML = `<div style="font-weight:600">${it.label}</div><div class="small">Price: ${it.price} coins</div><div style="margin-top:6px"><button class="btn buy" data-id="${it.id}">Buy</button></div>`;
+      modalGrid.appendChild(d);
+    });
+    document.querySelectorAll('.buy').forEach(b=>b.addEventListener('click', (e)=>{ buy(e.currentTarget.dataset.id); }));
+  }
+  function buy(id){
+    const it = items.find(x=>x.id===id);
+    if(!it) return alert('Item tidak ada');
+    if(STATE.coins < it.price) return alert('Koin tidak cukup');
+    STATE.coins -= it.price; localStorage.setItem('t3_coins', String(STATE.coins)); updateCoinsUI();
+    if(it.type==='theme'){ localStorage.setItem('t3_theme_'+id,'1'); alert('Tema dibeli dan diaktifkan. Silakan restart untuk melihat penuh.'); }
+    if(it.id==='perm-freeze'){ localStorage.setItem('t3_perm_freeze','1'); alert('Permanent Freeze dibeli!'); }
+    render();
+  }
+  return { render, buy };
+})();
+
+/* ---------- LEADERBOARD MODULE ---------- */
+const LBModule = (function(){
+  function save(name, score){
+    const key = STATE.leaderboardKey;
+    const lb = JSON.parse(localStorage.getItem(key) || '[]');
+    lb.push({ name: name || 'Guest', score, ts: Date.now() });
+    lb.sort((a,b)=>b.score - a.score);
+    localStorage.setItem(key, JSON.stringify(lb.slice(0,10)));
+    render();
+  }
+  function render(){
+    const key = STATE.leaderboardKey;
+    const el = document.getElementById('leaderboard');
+    const lb = JSON.parse(localStorage.getItem(key) || '[]');
+    el.innerHTML = lb.length ? lb.map((it,i)=>`<div style="padding:6px;border-bottom:1px solid rgba(255,255,255,0.02)">${i+1}. <strong>${it.name}</strong> — ${it.score}</div>`).join('') : '<div class="small" style="color:var(--muted)">Belum ada skor</div>';
+  }
+  function clear(){
+    localStorage.removeItem(STATE.leaderboardKey); render();
+  }
+  function exportData(){
+    const data = localStorage.getItem(STATE.leaderboardKey) || '[]';
+    const w = window.open(''); w.document.write(`<pre>${data}</pre>`);
+  }
+  return { save, render, clear, exportData };
+})();
+
+/* ---------- POWER-UPS ---------- */
+function useFreeze(){
+  const perm = localStorage.getItem('t3_perm_freeze') === '1';
+  if(perm || confirm('Gunakan 10 coins untuk Freeze 5 detik?')){
+    if(!perm && STATE.coins < 10) return alert('Koin tidak cukup');
+    if(!perm){ STATE.coins -= 10; localStorage.setItem('t3_coins', String(STATE.coins)); }
+    // freeze: pause GameCore step for 5s
+    GameCore.pause(); setTimeout(()=>{ GameCore.start && GameCore.start(); }, 5000);
+    AudioModule.play('power');
+    updateCoinsUI();
+  }
+}
+function useBomb(){
+  if(STATE.coins < 15) return alert('Koin tidak cukup');
+  if(!confirm('Gunakan 15 coins untuk Bomb (menghapus beberapa baris bawah)?')) return;
+  STATE.coins -= 15; localStorage.setItem('t3_coins', String(STATE.coins));
+  // remove 2 bottom-most rows randomly
+  for(let i=0;i<2;i++){
+    GameCore.arena.pop();
+    GameCore.arena.unshift(new Array(STATE.COLS).fill(0));
+  }
+  GameCore.rebuildMeshes();
+  AudioModule.play('power'); updateCoinsUI();
+}
+function useClear(){
+  if(STATE.coins < 12) return alert('Koin tidak cukup');
+  if(!confirm('Gunakan 12 coins untuk Clear random?')) return;
+  STATE.coins -= 12; localStorage.setItem('t3_coins', String(STATE.coins));
+  for(let i=0;i<3;i++){ GameCore.arena.pop(); GameCore.arena.unshift(new Array(STATE.COLS).fill(0)); }
+  GameCore.rebuildMeshes(); AudioModule.play('power'); updateCoinsUI();
+}
+
+/* ---------- UI wiring & main loop ---------- */
+(function(){
+  // controls
+  const btnPlay = document.getElementById('btn-play'), btnPause = document.getElementById('btn-pause'), btnRestart = document.getElementById('btn-restart');
+  const btnAI = document.getElementById('btn-ai-toggle'), btnShop = document.getElementById('btn-shop');
+  const btnSave = document.getElementById('btn-save'), btnClear = document.getElementById('btn-clear-lb'), btnExport = document.getElementById('btn-export');
+  const vol = document.getElementById('vol');
+  const shopModal = document.getElementById('modal-shop'), shopClose = document.getElementById('shop-close');
+
+  ShopModule.render(); LBModule.render();
+  document.getElementById('coins').textContent = STATE.coins; document.getElementById('coins2').textContent = STATE.coins;
+
+  // start AI sim
+  AIModule.start();
+
+  // initialize audio on user first interaction
+  window.addEventListener('click', function once(){
+    AudioModule.init();
+    window.removeEventListener('click', once);
+  });
+
+  btnPlay.addEventListener('click', ()=>{
+    GameCore.start();
+    AIModule.start();
+    btnPlay.disabled = true;
+    AudioModule.toggleMusic(true);
+  });
+  btnPause.addEventListener('click', ()=>{
+    GameCore.pause();
+    btnPause.textContent = 'Resume';
+    setTimeout(()=>{ btnPause.textContent = 'Pause'; }, 100);
+  });
+  btnRestart.addEventListener('click', ()=>{
+    location.reload(); // simple restart for stability
+  });
+  btnAI.addEventListener('click', ()=>{
+    const active = btnAI.dataset.on === '1';
+    if(active){ btnAI.dataset.on='0'; btnAI.textContent = 'AI: Off'; AIModule.stop(); } else { btnAI.dataset.on='1'; btnAI.textContent='AI: On'; AIModule.start(); }
+  });
+  btnShop.addEventListener('click', ()=>{ shopModal.style.display='block'; });
+  shopClose && shopClose.addEventListener('click', ()=>{ shopModal.style.display='none'; });
+  vol.addEventListener('input', (e)=>{ AudioModule.setVolume(parseFloat(e.target.value)); });
+
+  document.getElementById('power-freeze').addEventListener('click', useFreeze);
+  document.getElementById('power-bomb').addEventListener('click', useBomb);
+  document.getElementById('power-clear').addEventListener('click', useClear);
+
+  document.getElementById('btn-save').addEventListener('click', ()=>{ const name = (document.getElementById('playerName').value||'Guest').slice(0,12); const st = GameCore.getState && GameCore.getState(); LBModule.save(name, st ? st.score : 0); });
+  document.getElementById('btn-clear-lb').addEventListener('click', ()=>{ if(confirm('Clear leaderboard?')) LBModule.clear(); });
+  document.getElementById('btn-export').addEventListener('click', ()=>{ LBModule.exportData(); });
+
+  // shop buttons inside the grid
+  document.getElementById('shop-grid').addEventListener('click', (e)=>{
+    const b = e.target.closest('button');
+    if(!b) return;
+    const id = b.dataset.id;
+    ShopModule.buy && ShopModule.buy(id);
+  });
+
+  // keyboard mapping — careful with focus
+  window.addEventListener('keydown', (e)=>{
+    if(!GameCore) return;
+    if(e.key === 'ArrowLeft'){ // move left
+      try{ GameCore.setCurrent && (GameCore.current.x -= 1); }catch(e){}
+    }
+    // We connect proper controls by listening to GameCore's object functions
+  });
+
+  // expose update loop
+  let last = performance.now();
+  function loop(t){
+    const dt = t - last; last = t;
+    // step game core: small safe calls
+    try{ GameCore.step && GameCore.step(t, dt); }catch(e){ console.error('GameCore.step error', e); }
+    try{ AIModule.step && AIModule.step(dt); AIModule.render && AIModule.render(); }catch(e){}
+    ThreeModule.render();
+    requestAnimationFrame(loop);
+  }
+  requestAnimationFrame(loop);
+
+  // helper update coins UI
+  window.updateCoinsUI = function(){ document.getElementById('coins').textContent = STATE.coins; document.getElementById('coins2').textContent = STATE.coins; };
+
+  // initial render of shop & leaderboard
+  ShopModule.render(); LBModule.render();
+
+  // safety: if something errors, show console message
+  window.addEventListener('error', (ev)=> console.error('Runtime error', ev.error || ev.message));
+})();
+
+/* ===========================
+   End of file
+   =========================== */
+</script>
 </body>
 </html>
